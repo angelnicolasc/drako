@@ -1,0 +1,4 @@
+crewai>=0.80.0
+langchain>=0.3.0
+crewai-tools>=0.8.0
+openai>=1.0.0

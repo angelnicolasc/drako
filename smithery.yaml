@@ -1,0 +1,17 @@
+runtime: container
+configSchema:
+  type: object
+  required: []
+  properties:
+    apiKey:
+      type: string
+      title: "AgentMesh API Key"
+      description: "Your AgentMesh platform API key (optional for scan features, required for runtime governance)"
+    policyEndpoint:
+      type: string
+      title: "Policy Server URL"
+      description: "URL of your AgentMesh backend for policy evaluation and audit logging"
+build:
+  dockerfile: Dockerfile
+env:
+  PORT: "8000"

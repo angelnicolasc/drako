@@ -1,0 +1,17 @@
+{
+    "name": "agentmesh",
+    "description": "AI agent governance and compliance middleware with policy enforcement, cryptographic audit trails, DLP, Trust Score, and EU AI Act mapping",
+    "category": "security",
+    "tags": [
+        "governance",
+        "compliance",
+        "security",
+        "audit",
+        "dlp",
+        "eu-ai-act",
+        "trust-score",
+        "policy-enforcement",
+        "mcp"
+    ],
+    "homepage": "https://useagentmesh.com"
+}
