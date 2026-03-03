@@ -2,7 +2,7 @@
 
 **Scan your AI agents for governance gaps. Enforce policies in production.**
 
-[![PyPI version](https://badge.fury.io/py/agentmesh.svg)](https://badge.fury.io/py/agentmesh)
+[![PyPI version](https://badge.fury.io/py/useagentmesh.svg)](https://badge.fury.io/py/useagentmesh)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Tests passing](https://img.shields.io/badge/tests-186%2F186%20passing-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](https://mariadb.com/bsl11/)
@@ -63,7 +63,7 @@ Add to MCP settings:
 
 ## What You Get Free (Scan CLI)
 
-* 🔍 **Governance Score**: 0-100 score based on 25 deterministic policy rules (<2ms evaluation)
+* 🔍 **Governance Score**: 0-100 score based on 27 deterministic policy rules (<2ms evaluation)
 * 📦 **Agent BOM**: AST-based inventory of agents, tools, and models in your project
 * 🛠️ **Fix Snippets**: Actionable remediation for every finding
 * 📄 **SARIF 2.1.0**: Native GitHub Code Scanning integration
