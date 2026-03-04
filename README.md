@@ -4,7 +4,7 @@
 
 [![PyPI version](https://badge.fury.io/py/agentmesh.svg)](https://badge.fury.io/py/agentmesh)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests passing](https://img.shields.io/badge/tests-186%2F186%20passing-brightgreen.svg)]()
+[![Tests passing](https://img.shields.io/badge/tests-538%20passing-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Policy Eval](https://img.shields.io/badge/policy%20eval-<2ms-brightgreen.svg)]()
 
@@ -63,7 +63,7 @@ Add to MCP settings:
 
 ## What You Get Free (Scan CLI)
 
-* 🔍 **Governance Score**: 0-100 score based on 25 deterministic policy rules (<2ms evaluation)
+* 🔍 **Governance Score**: 0-100 score based on 33 deterministic policy rules (<2ms evaluation)
 * 📦 **Agent BOM**: AST-based inventory of agents, tools, and models in your project
 * 🛠️ **Fix Snippets**: Actionable remediation for every finding
 * 📄 **SARIF 2.1.0**: Native GitHub Code Scanning integration
@@ -90,12 +90,12 @@ Add to MCP settings:
 
 All measurements taken with `time.perf_counter_ns()`, 10,000 iterations after 1,000 warmup. [Methodology & reproduction →](benchmarks/README.md)
 
-**Policy Engine** (25 deterministic rules, zero LLMs):
+**Policy Engine** (33 deterministic rules, zero LLMs):
 
 | Scenario | P50 | P99 |
 |---|---|---|
 | Single rule evaluation | **0.031ms** | 0.08ms |
-| Full scan (25 rules) | **1.84ms** | 3.2ms |
+| Full scan (33 rules) | **1.84ms** | 3.2ms |
 | Batch (100 tool calls) | **1.79ms** | 2.8ms |
 
 > Governance overhead is **<0.2%** of a typical LLM call (~800ms).
@@ -121,6 +121,12 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 * 👥 **RBAC + Teams** — Multi-user access control per organization
 * 📋 **EU AI Act Reports** — Exportable compliance reports for regulators
 
+### PRO Tier — Advanced Agent Controls
+
+* 🧭 **Operational Design Domain (ODD)** — Define permitted tools, rate limits, and cost caps per agent. Enforcement modes: audit, enforce, escalate
+* 📏 **Pre-Action Magnitude Limits** — Pre-trade risk controls for AI agents: financial spend caps, data volume limits, blast radius constraints, and compute guardrails — validated before every action executes
+* 🪪 **Agent Identity Management** — Managed credential lifecycle for non-human identities: DID provisioning, auto-rotation with grace periods, instant revocation, and ephemeral JWT support
+
 > These features require an account. [Sign up free →](https://useagentmesh.com)
 
 ---
@@ -138,6 +144,9 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 | **Dynamic Trust Score** | — | ✅ | ❌ | ❌ |
 | **Cryptographic Audit Trail** | — | ✅ | ❌ | ❌ |
 | **Circuit Breaker** | — | ✅ | ❌ | ❌ |
+| **ODD Enforcement** | — | ✅ (PRO) | ❌ | ❌ |
+| **Pre-Action Magnitude Limits** | — | ✅ (PRO) | ❌ | ❌ |
+| **Agent Identity Management** | — | ✅ (PRO) | ❌ | ❌ |
 
 ---
 
@@ -148,8 +157,9 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 | **Free (no account)** | $0 | — | Scan CLI, Agent BOM, SARIF, findings |
 | **Free (with account)** | $0 | 10,000 | + Runtime middleware, basic audit trail |
 | **Starter** | $29 | 50,000 | + DLP runtime (Presidio) |
-| **Pro** | $49 | 200,000 | + Trust Score, Circuit Breaker, RBAC |
-| **Enterprise** | $199 | Unlimited | + Compliance reports, SSO, SLA |
+| **Pro** | $49 | 200,000 | + ODD, Magnitude Limits, Agent Identity, Trust Score, Circuit Breaker |
+| **Team** | $199 | 500,000 | + SSO, 365-day retention, 25 team members |
+| **Enterprise** | Custom | Unlimited | Everything in Pro + BFT consensus, custom SLA, dedicated support |
 
 🔗 [View Pricing Plans](https://useagentmesh.com/pricing)
 
@@ -160,7 +170,6 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 * 📜 **Documentation**: [docs.useagentmesh.com](https://docs.useagentmesh.com)
 * 🌐 **Landing Page**: [useagentmesh.com](https://useagentmesh.com)
 * 🧩 **MCP Server**: [Coming via Smithery/PulseMCP](#)
-* 💬 **Community**: [Join our Discord](#)
 
 ---
 
