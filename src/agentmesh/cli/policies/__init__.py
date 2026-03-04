@@ -1,7 +1,7 @@
 """Policy evaluation engine for `agentmesh scan`.
 
-Evaluates project against 25 built-in governance, security,
-compliance, and best-practice policy rules.
+Evaluates project against 33 built-in governance, security,
+compliance, operational, magnitude, identity, and best-practice policy rules.
 """
 
 from __future__ import annotations
@@ -13,12 +13,15 @@ from agentmesh.cli.policies.security import SECURITY_POLICIES
 from agentmesh.cli.policies.governance import GOVERNANCE_POLICIES
 from agentmesh.cli.policies.compliance import COMPLIANCE_POLICIES
 from agentmesh.cli.policies.bestpractices import BEST_PRACTICE_POLICIES
+from agentmesh.cli.policies.operational import OPERATIONAL_POLICIES
+from agentmesh.cli.policies.magnitude import MAGNITUDE_POLICIES
+from agentmesh.cli.policies.identity import IDENTITY_POLICIES
 
 if TYPE_CHECKING:
     from agentmesh.cli.bom import AgentBOM
     from agentmesh.cli.discovery import ProjectMetadata
 
-ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES
+ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES + OPERATIONAL_POLICIES + MAGNITUDE_POLICIES + IDENTITY_POLICIES
 
 
 def evaluate_all_policies(bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
