@@ -63,11 +63,7 @@ Add to MCP settings:
 
 ## What You Get Free (Scan CLI)
 
-<<<<<<< HEAD
 * 🔍 **Governance Score**: 0-100 score based on 33 deterministic policy rules (<2ms evaluation)
-=======
-* 🔍 **Governance Score**: 0-100 score based on 27 deterministic policy rules (<2ms evaluation)
->>>>>>> f5685946f7dd0caf2c3fa534f98d23666044157f
 * 📦 **Agent BOM**: AST-based inventory of agents, tools, and models in your project
 * 🛠️ **Fix Snippets**: Actionable remediation for every finding
 * 📄 **SARIF 2.1.0**: Native GitHub Code Scanning integration
@@ -125,11 +121,11 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 * 👥 **RBAC + Teams** — Multi-user access control per organization
 * 📋 **EU AI Act Reports** — Exportable compliance reports for regulators
 
-### PRO Tier — Advanced Agent Controls
+### The Most Advanced Agent Controls
 
 * 🧭 **Operational Design Domain (ODD)** — Define permitted tools, rate limits, and cost caps per agent. Enforcement modes: audit, enforce, escalate
 * 📏 **Pre-Action Magnitude Limits** — Pre-trade risk controls for AI agents: financial spend caps, data volume limits, blast radius constraints, and compute guardrails — validated before every action executes
-* 🪪 **Agent Identity Management** — Managed credential lifecycle for non-human identities: DID provisioning, auto-rotation with grace periods, instant revocation, and ephemeral JWT support
+* 🤖 **Agent Identity Management** — Managed credential lifecycle for non-human identities: DID provisioning, auto-rotation with grace periods, instant revocation, and ephemeral JWT support
 
 > These features require an account. [Sign up free →](https://useagentmesh.com)
 
@@ -148,9 +144,9 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 | **Dynamic Trust Score** | — | ✅ | ❌ | ❌ |
 | **Cryptographic Audit Trail** | — | ✅ | ❌ | ❌ |
 | **Circuit Breaker** | — | ✅ | ❌ | ❌ |
-| **ODD Enforcement** | — | ✅ (PRO) | ❌ | ❌ |
-| **Pre-Action Magnitude Limits** | — | ✅ (PRO) | ❌ | ❌ |
-| **Agent Identity Management** | — | ✅ (PRO) | ❌ | ❌ |
+| **ODD Enforcement** | — | ✅ | ❌ | ❌ |
+| **Pre-Action Magnitude Limits** | — | ✅ | ❌ | ❌ |
+| **Agent Identity Management** | — | ✅ | ❌ | ❌ |
 
 ---
 
@@ -162,8 +158,8 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 | **Free (with account)** | $0 | 10,000 | + Runtime middleware, basic audit trail |
 | **Starter** | $29 | 50,000 | + DLP runtime (Presidio) |
 | **Pro** | $49 | 200,000 | + ODD, Magnitude Limits, Agent Identity, Trust Score, Circuit Breaker |
-| **Team** | $199 | 500,000 | + SSO, 365-day retention, 25 team members |
-| **Enterprise** | Custom | Unlimited | Everything in Pro + BFT consensus, custom SLA, dedicated support |
+| **Pro Team** | $199 | 500,000 | + SSO, 365-day retention, 25 team members |
+| **Enterprise** | Custom | Unlimited | Everything in Pro Team + BFT consensus, custom SLA, dedicated support |
 
 🔗 [View Pricing Plans](https://useagentmesh.com/pricing)
 
@@ -171,7 +167,7 @@ When you connect the SDK to the AgentMesh platform, you unlock runtime governanc
 
 ## Links & Resources
 
-* 📜 **Documentation**: [docs.useagentmesh.com](https://docs.useagentmesh.com)
+* 📜 **Documentation**: [docs.useagentmesh.com](https://useagentmesh/docs.com)
 * 🌐 **Landing Page**: [useagentmesh.com](https://useagentmesh.com)
 * 🧩 **MCP Server**: [Coming via Smithery/PulseMCP](#)
 
