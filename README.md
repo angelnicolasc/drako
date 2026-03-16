@@ -68,12 +68,18 @@ agentmesh scan .
 👉 agentmesh scan --share      Share your score on social media
 ```
 
+Common flags:
+
 ```bash
 agentmesh scan --format sarif       # SARIF 2.1.0 for GitHub Code Scanning
 agentmesh scan --threshold 70       # Exit 1 if score < 70
 agentmesh scan --fail-on critical   # Exit 1 on any critical finding
 agentmesh scan --diff HEAD~1        # Only scan changed files
-agentmesh scan --share              # Generate pre-written social posts with your score
+agentmesh scan --details            # Full report with code snippets and fixes
+agentmesh history          # view policy snapshot history
+agentmesh diff v2 v3       # compare policy versions
+agentmesh rollback v2      # restore previous policy
+agentmesh scan . --share   # scan + generate shareable score card
 ```
 
 ---
