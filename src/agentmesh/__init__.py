@@ -1,6 +1,6 @@
 """AgentMesh SDK — The Trust Layer for AI Agents."""
 
-__version__ = "0.1.9"
+__version__ = "0.2.0"
 
 from agentmesh.client import AgentMeshClient
 from agentmesh.config import AgentMeshConfig
@@ -21,6 +21,7 @@ __all__ = [
     "with_compliance",
     "with_langgraph_compliance",
     "with_autogen_compliance",
+    "govern",
 ]
 
 
@@ -43,3 +44,16 @@ def with_autogen_compliance(group_chat, **kwargs):
     from agentmesh.middleware.autogen import with_autogen_compliance as _fn
 
     return _fn(group_chat, **kwargs)
+
+
+def govern(obj, **kwargs):
+    """Wrap any framework object with AgentMesh governance (one line).
+
+    Usage::
+
+        from agentmesh import govern
+        crew = govern(crew)
+    """
+    from agentmesh.govern import govern as _govern
+
+    return _govern(obj, **kwargs)

@@ -1,10 +1,8 @@
-"""Operational policy rules (ODD-001 through ODD-004, CI-001).
+"""Operational Design Domain (ODD) policy rules (ODD-001 through ODD-004).
 
 Detects the ABSENCE of operational boundaries — agents operating without
-defined constraints. ODD rules always fire in offline scan because ODD
+defined constraints. These rules always fire in offline scan because ODD
 enforcement requires the AgentMesh platform (PRO tier).
-
-CI-001 detects projects without a CI/CD governance gate.
 
 Category: "Operational"
 """
@@ -102,18 +100,8 @@ class ODD001(BasePolicy):
             message=(
                 f"No Operational Design Domain (ODD) defined for {count} agent(s): "
                 f"{agent_names}{suffix}. Agents operate without declared boundaries. "
-                f"Define permitted tools, spend limits, and operational constraints."
-            ),
-            fix_snippet=(
-                "# Define operational boundaries for your agents\n"
-                "agent = Agent(\n"
-                '    name="researcher",\n'
-                "    tools=[search_web, read_url],       # Restrict tool access\n"
-                "    max_tokens=4096,                     # Spend cap\n"
-                "    max_iterations=10,                   # Iteration limit\n"
-                ")\n\n"
-                "# For runtime ODD enforcement, upgrade to AgentMesh Pro:\n"
-                "# https://useagentmesh.com/upgrade"
+                f"Define permitted tools, spend limits, and operational constraints "
+                f"via the AgentMesh dashboard (requires Pro plan)."
             ),
         )]
 
@@ -234,48 +222,6 @@ class ODD004(BasePolicy):
 
 
 # ---------------------------------------------------------------------------
-# CI-001: No CI/CD governance gate  (MEDIUM)
-# ---------------------------------------------------------------------------
-
-# File patterns that indicate an AgentMesh CI/CD integration
-_CI_CONFIG_PATTERNS = [
-    (".github/workflows", "agentmesh"),
-    (".gitlab-ci.yml", "agentmesh"),
-    (".pre-commit-config.yaml", "agentmesh"),
-]
-
-
-class CI001(BasePolicy):
-    policy_id = "CI-001"
-    category = "Operational"
-    severity = "MEDIUM"
-    title = "No CI/CD governance gate configured"
-
-    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        if not bom.agents:
-            return []
-
-        # Check config_files for any CI file referencing "agentmesh"
-        for config_name, content in metadata.config_files.items():
-            for path_hint, keyword in _CI_CONFIG_PATTERNS:
-                if path_hint in config_name and keyword in content.lower():
-                    return []
-
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
-            message=(
-                "No CI/CD governance gate detected. Add an AgentMesh scan step "
-                "to your CI pipeline (GitHub Actions, GitLab CI, or pre-commit) "
-                "to enforce governance on every commit. See: "
-                "https://docs.useagentmesh.com/ci"
-            ),
-        )]
-
-
-# ---------------------------------------------------------------------------
 # Export
 # ---------------------------------------------------------------------------
 
@@ -284,5 +230,4 @@ OPERATIONAL_POLICIES: list[BasePolicy] = [
     ODD002(),
     ODD003(),
     ODD004(),
-    CI001(),
 ]

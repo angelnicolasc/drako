@@ -75,16 +75,9 @@ class ID001(BasePolicy):
             message=(
                 f"Static credentials detected in agent code across "
                 f"{len(bom.agents)} agent(s). Hardcoded API keys, tokens, "
-                f"or secrets should be replaced with environment variables."
-            ),
-            fix_snippet=(
-                "import os\n\n"
-                "# Replace hardcoded credentials with environment variables\n"
-                'api_key = os.environ["OPENAI_API_KEY"]\n\n'
-                "# Or with a default fallback:\n"
-                '# api_key = os.getenv("OPENAI_API_KEY", "")\n\n'
-                "# For auto-rotating managed credentials, upgrade to AgentMesh Pro:\n"
-                "# https://useagentmesh.com/upgrade"
+                f"or secrets should be replaced with managed identities. "
+                f"Use AgentMesh Identity Management for auto-rotating "
+                f"credentials (requires Pro plan)."
             ),
         )]
 

@@ -1,7 +1,8 @@
 """Policy evaluation engine for `agentmesh scan`.
 
-Evaluates project against 34 built-in governance, security,
-compliance, operational, magnitude, identity, and best-practice policy rules.
+Evaluates project against 55 built-in governance, security,
+compliance, operational, magnitude, identity, versioning, hooks,
+finops, resilience, a2a, multi-agent, and best-practice policy rules.
 """
 
 from __future__ import annotations
@@ -16,12 +17,18 @@ from agentmesh.cli.policies.bestpractices import BEST_PRACTICE_POLICIES
 from agentmesh.cli.policies.operational import OPERATIONAL_POLICIES
 from agentmesh.cli.policies.magnitude import MAGNITUDE_POLICIES
 from agentmesh.cli.policies.identity import IDENTITY_POLICIES
+from agentmesh.cli.policies.versioning import VERSIONING_POLICIES
+from agentmesh.cli.policies.hooks import HOOKS_POLICIES
+from agentmesh.cli.policies.finops import FINOPS_POLICIES
+from agentmesh.cli.policies.resilience import RESILIENCE_POLICIES
+from agentmesh.cli.policies.a2a import A2A_POLICIES
+from agentmesh.cli.policies.multiagent import MULTIAGENT_POLICIES
 
 if TYPE_CHECKING:
     from agentmesh.cli.bom import AgentBOM
     from agentmesh.cli.discovery import ProjectMetadata
 
-ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES + OPERATIONAL_POLICIES + MAGNITUDE_POLICIES + IDENTITY_POLICIES
+ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES + OPERATIONAL_POLICIES + MAGNITUDE_POLICIES + IDENTITY_POLICIES + VERSIONING_POLICIES + HOOKS_POLICIES + FINOPS_POLICIES + RESILIENCE_POLICIES + A2A_POLICIES + MULTIAGENT_POLICIES
 
 
 def evaluate_all_policies(bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:

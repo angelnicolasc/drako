@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+import uuid
 from typing import Any
 
 import httpx
@@ -197,12 +198,15 @@ class AgentMeshClient:
         self, action: str, agent_did: str, context: dict | None = None
     ) -> dict:
         """Evaluate whether an action is permitted by the tenant's policies."""
+        ctx = context or {}
         payload: dict[str, Any] = {
-            "agent_did": agent_did,
-            "action_type": action,
+            "agent_id": agent_did,
+            "task_id": ctx.get("task_id", str(uuid.uuid4())),
+            "task_type": ctx.get("tool_name", action),
+            "required_scope": ctx.get("scope", "default"),
         }
-        if context:
-            payload["context"] = context
+        if ctx.get("payload_preview"):
+            payload["payload_preview"] = ctx["payload_preview"]
         return await self._request("POST", "/api/v1/trust/evaluate", json=payload)
 
     async def audit_log(
@@ -258,12 +262,15 @@ class AgentMeshClient:
         self, action: str, agent_did: str, context: dict | None = None
     ) -> dict:
         """Sync wrapper for evaluate_policy."""
+        ctx = context or {}
         payload: dict[str, Any] = {
-            "agent_did": agent_did,
-            "action_type": action,
+            "agent_id": agent_did,
+            "task_id": ctx.get("task_id", str(uuid.uuid4())),
+            "task_type": ctx.get("tool_name", action),
+            "required_scope": ctx.get("scope", "default"),
         }
-        if context:
-            payload["context"] = context
+        if ctx.get("payload_preview"):
+            payload["payload_preview"] = ctx["payload_preview"]
         return self._request_sync("POST", "/api/v1/trust/evaluate", json=payload)
 
     def audit_log_sync(
@@ -292,6 +299,44 @@ class AgentMeshClient:
             params["last_n"] = last_n
         return self._request_sync("POST", "/api/v1/audit-logs/verify", json=params)
 
+    # ------------------------------------------------------------------
+    # Intent Fingerprinting (Two-Gate) — sync wrappers
+    # ------------------------------------------------------------------
+
+    def create_intent_sync(
+        self,
+        agent_name: str,
+        tool_name: str,
+        tool_args: dict | None = None,
+        session_id: str | None = None,
+        sequence_number: int = 0,
+    ) -> dict:
+        """Gate 1 — create an intent fingerprint before execution."""
+        payload: dict[str, Any] = {
+            "agent_name": agent_name,
+            "tool_name": tool_name,
+            "tool_args": tool_args or {},
+            "session_id": session_id,
+            "sequence_number": sequence_number,
+        }
+        return self._request_sync("POST", "/api/v1/intent/create", json=payload)
+
+    def verify_intent_sync(
+        self,
+        intent_id: str,
+        intent_hash: str,
+        tool_name: str,
+        tool_args: dict | None = None,
+    ) -> dict:
+        """Gate 2 — verify that tool args haven't changed since Gate 1."""
+        payload: dict[str, Any] = {
+            "intent_id": intent_id,
+            "intent_hash": intent_hash,
+            "tool_name": tool_name,
+            "tool_args": tool_args or {},
+        }
+        return self._request_sync("POST", "/api/v1/intent/verify", json=payload)
+
     def check_quota_sync(self) -> dict:
         """Sync wrapper for check_quota."""
         return self._request_sync("GET", "/api/v1/billing/subscription")
@@ -299,6 +344,189 @@ class AgentMeshClient:
     def validate_key_sync(self) -> dict:
         """Sync wrapper for validate_key."""
         return self._request_sync("GET", "/api/v1/stats")
+
+    # ------------------------------------------------------------------
+    # Agentic FinOps (Sprint 4)
+    # ------------------------------------------------------------------
+
+    def record_cost_sync(
+        self,
+        agent_name: str,
+        tool_name: str,
+        model_name: str,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        total_cost_usd: float = 0.0,
+        cached: bool = False,
+        routed: bool = False,
+        original_model: str | None = None,
+        task_id: str | None = None,
+        session_id: str | None = None,
+        latency_ms: int | None = None,
+    ) -> dict:
+        """Record an LLM call cost to the FinOps tracking system."""
+        payload: dict[str, Any] = {
+            "agent_id": agent_name,
+            "tool_name": tool_name,
+            "model_name": model_name,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_cost_usd": total_cost_usd,
+            "cached": cached,
+            "routed": routed,
+        }
+        if original_model:
+            payload["original_model"] = original_model
+        if task_id:
+            payload["task_id"] = task_id
+        if session_id:
+            payload["session_id"] = session_id
+        if latency_ms is not None:
+            payload["latency_ms"] = latency_ms
+        return self._request_sync("POST", "/api/v1/finops/record", json=payload)
+
+    def finops_cache_lookup_sync(
+        self,
+        cache_key: str,
+    ) -> dict:
+        """Look up a cached LLM response by hash key."""
+        return self._request_sync(
+            "GET", f"/api/v1/finops/cache/{cache_key}",
+        )
+
+    def finops_cache_store_sync(
+        self,
+        cache_key: str,
+        response: str,
+        model_name: str,
+        ttl_hours: int = 24,
+    ) -> dict:
+        """Store an LLM response in the FinOps cache."""
+        return self._request_sync(
+            "POST",
+            "/api/v1/finops/cache",
+            json={
+                "cache_key": cache_key,
+                "response": response,
+                "model_name": model_name,
+                "ttl_hours": ttl_hours,
+            },
+        )
+
+    def finops_route_model_sync(
+        self,
+        tool_name: str,
+        context: dict[str, Any] | None = None,
+    ) -> dict:
+        """Ask the backend which model to use for a given tool/context."""
+        return self._request_sync(
+            "POST",
+            "/api/v1/finops/route",
+            json={
+                "tool_name": tool_name,
+                "context": context or {},
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Programmable Hooks (Sprint 3)
+    # ------------------------------------------------------------------
+
+    async def execute_hooks(
+        self,
+        hook_point: str,
+        context: dict[str, Any],
+    ) -> dict:
+        """Execute hooks for a given hook_point."""
+        return await self._request(
+            "POST",
+            "/api/v1/hooks/execute",
+            json={"hook_point": hook_point, "context": context},
+        )
+
+    def execute_hooks_sync(
+        self,
+        hook_point: str,
+        context: dict[str, Any],
+    ) -> dict:
+        """Sync wrapper for execute_hooks."""
+        return self._request_sync(
+            "POST",
+            "/api/v1/hooks/execute",
+            json={"hook_point": hook_point, "context": context},
+        )
+
+    # ------------------------------------------------------------------
+    # Collective Intelligence (Sprint 7)
+    # ------------------------------------------------------------------
+
+    def check_ioc_sync(
+        self,
+        tool_name: str,
+        tool_args: str,
+        block_severity: int = 7,
+    ) -> dict | None:
+        """Check tool args against the global IOC cache. Returns match or None."""
+        try:
+            result = self._request_sync(
+                "POST",
+                "/api/v1/intel/check",
+                json={
+                    "tool_name": tool_name,
+                    "content": tool_args,
+                    "block_severity": block_severity,
+                },
+            )
+            if result and result.get("action"):
+                return result
+            return None
+        except Exception:
+            return None  # IOC check failures must never block execution
+
+    async def check_ioc(
+        self,
+        tool_name: str,
+        tool_args: str,
+        block_severity: int = 7,
+    ) -> dict | None:
+        """Async: check tool args against the global IOC cache."""
+        try:
+            result = await self._request(
+                "POST",
+                "/api/v1/intel/check",
+                json={
+                    "tool_name": tool_name,
+                    "content": tool_args,
+                    "block_severity": block_severity,
+                },
+            )
+            if result and result.get("action"):
+                return result
+            return None
+        except Exception:
+            return None
+
+    def submit_ioc_sync(
+        self,
+        ioc_type: str,
+        content: str,
+        severity: int,
+        source_feature: str,
+    ) -> dict | None:
+        """Auto-submit a detected threat to the collective intelligence network."""
+        try:
+            return self._request_sync(
+                "POST",
+                "/api/v1/intel/submit",
+                json={
+                    "ioc_type": ioc_type,
+                    "content": content,
+                    "severity": severity,
+                    "source_feature": source_feature,
+                },
+            )
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     # Lifecycle

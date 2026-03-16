@@ -1,7 +1,8 @@
-"""EU AI Act compliance policy rules (COM-001 through COM-005)."""
+"""EU AI Act compliance policy rules (COM-001 through COM-006)."""
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from agentmesh.cli.policies.base import BasePolicy, Finding
@@ -24,6 +25,19 @@ _OVERSIGHT_PATTERNS = [
     "supervisor", "review_queue",
 ]
 
+# Patterns indicating HITL checkpoint configuration
+_HITL_CONFIG_PATTERNS = [
+    "hitl:", "hitl_checkpoint", "approval_required", "pending_approval",
+    "human_gate", "escalation_policy", "require_human_approval",
+]
+
+# Tool names suggesting high-risk side-effects
+_SIDE_EFFECT_TOOL_PATTERNS = re.compile(
+    r"(?:delete|write|remove|send|pay|transfer|execute|deploy|publish|drop|"
+    r"post|push|submit|update|modify|create|insert)",
+    re.IGNORECASE,
+)
+
 
 def _content_has_pattern(all_content: str, patterns: list[str]) -> bool:
     lower = all_content.lower()
@@ -41,9 +55,6 @@ class COM001(BasePolicy):
     title = "No automatic logging (EU AI Act Art. 12)"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        if not metadata.frameworks:
-            return []
-
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
@@ -103,9 +114,6 @@ class COM003(BasePolicy):
     title = "No technical documentation (EU AI Act Art. 11)"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        if not metadata.frameworks:
-            return []
-
         root = metadata.root
         has_docs = False
 
@@ -163,9 +171,6 @@ class COM004(BasePolicy):
     title = "No risk management documentation (EU AI Act Art. 9)"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        if not metadata.frameworks:
-            return []
-
         root = metadata.root
 
         risk_indicators = [
@@ -234,6 +239,65 @@ class COM005(BasePolicy):
 
 
 # ---------------------------------------------------------------------------
+# COM-006: No HITL checkpoint for high-risk actions
+# ---------------------------------------------------------------------------
+
+class COM006(BasePolicy):
+    policy_id = "COM-006"
+    category = "Compliance"
+    severity = "CRITICAL"
+    title = "No HITL checkpoint for high-risk actions"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        # Only relevant if agents have tools with side-effects
+        side_effect_tools = [
+            t for t in bom.tools
+            if _SIDE_EFFECT_TOOL_PATTERNS.search(t.name)
+        ]
+        if not side_effect_tools:
+            return []
+
+        # Check for HITL configuration in YAML config files
+        all_config = "\n".join(metadata.config_files.values())
+        if any(p.lower() in all_config.lower() for p in _HITL_CONFIG_PATTERNS):
+            return []
+
+        # Check for HITL patterns in Python source
+        all_content = "\n".join(
+            c for p, c in metadata.file_contents.items() if p.endswith(".py")
+        )
+        if _content_has_pattern(all_content, _OVERSIGHT_PATTERNS):
+            return []
+
+        tool_names = ", ".join(t.name for t in side_effect_tools[:5])
+        return [Finding(
+            policy_id=self.policy_id,
+            category=self.category,
+            severity=self.severity,
+            title=self.title,
+            message=(
+                f"EU AI Act Article 14 requires human oversight for high-risk AI actions. "
+                f"Tools with side-effects detected ({tool_names}) but no HITL checkpoint configured. "
+                f"Agents can execute destructive actions without human approval."
+            ),
+            fix_snippet=(
+                "# Configure HITL checkpoints in .agentmesh.yaml:\n"
+                "hitl:\n"
+                "  mode: enforce\n"
+                "  triggers:\n"
+                "    tool_types:\n"
+                "      - write\n"
+                "      - execute\n"
+                "      - payment\n"
+                "    trust_score_below: 60\n"
+                "    spend_above_usd: 100.00\n"
+                "  approval_timeout_minutes: 30\n"
+                "  timeout_action: reject"
+            ),
+        )]
+
+
+# ---------------------------------------------------------------------------
 # Export
 # ---------------------------------------------------------------------------
 
@@ -243,4 +307,5 @@ COMPLIANCE_POLICIES: list[BasePolicy] = [
     COM003(),
     COM004(),
     COM005(),
+    COM006(),
 ]

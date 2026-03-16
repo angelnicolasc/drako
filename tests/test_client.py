@@ -116,7 +116,7 @@ class TestSyncCalls:
 
     @respx.mock
     def test_check_quota_sync(self, api_key, endpoint, tenant_id):
-        respx.get(f"{endpoint}/api/v1/billing/usage/{tenant_id}").mock(
+        respx.get(f"{endpoint}/api/v1/billing/subscription").mock(
             return_value=httpx.Response(200, json={
                 "used": 45,
                 "limit": 100,
@@ -187,7 +187,7 @@ class TestErrorHandling:
 
     @respx.mock
     def test_quota_error_429(self, api_key, endpoint, tenant_id):
-        respx.get(f"{endpoint}/api/v1/billing/usage/{tenant_id}").mock(
+        respx.get(f"{endpoint}/api/v1/billing/subscription").mock(
             return_value=httpx.Response(429, text="Rate limited")
         )
         c = AgentMeshClient(api_key=api_key, endpoint=endpoint, tenant_id=tenant_id)

@@ -77,6 +77,83 @@ def status(config_path: str) -> None:
     except AgentMeshError:
         click.echo(click.style("  [quota]  ", fg="yellow") + "Could not fetch quota info")
 
+    # ---- Scan info ----
+    from agentmesh.cli.scan_cache import load_scan_cache
+
+    scan_data = load_scan_cache(".", max_age_seconds=86400)  # 24h for status display
+    if scan_data:
+        score = scan_data.get("score", "?")
+        grade = scan_data.get("grade", "?")
+        n_agents = len(scan_data.get("agents", []))
+        n_tools = len(scan_data.get("tools", []))
+        findings = scan_data.get("findings_summary", {})
+        critical = findings.get("critical", 0)
+        high = findings.get("high", 0)
+        click.echo(click.style("  [scan]   ", fg="green") + f"Last scan: {score}/100 [{grade}] │ {n_agents} agents │ {n_tools} tools")
+        if critical or high:
+            click.echo(f"           {critical} critical │ {high} high findings")
+    else:
+        click.echo(click.style("  [scan]   ", fg="yellow") + "No recent scan. Run: agentmesh scan .")
+
+    # ---- Governance features from config ----
+    _show_governance(config_path)
+
+    # ---- Last push info ----
+    try:
+        import httpx
+        with httpx.Client(timeout=5.0) as http:
+            resp = http.get(
+                f"{config.endpoint.rstrip('/')}/api/v1/config/current",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            version = data.get("version")
+            pushed_at = data.get("pushed_at")
+            if version:
+                click.echo(click.style("  [push]   ", fg="green") + f"Config v{version} (pushed {pushed_at or '?'})")
+
+                active = data.get("active_features", [])
+                locked = data.get("locked_features", [])
+                if active:
+                    for f in active:
+                        click.echo(f"           ✓ {f}")
+                if locked:
+                    for f in locked:
+                        click.echo(click.style(f"           ✗ {f}", fg="yellow"))
+            else:
+                click.echo(click.style("  [push]   ", fg="yellow") + "No config pushed yet. Run: agentmesh push")
+    except Exception:
+        pass  # Non-critical
+
     click.echo()
     click.secho("  All checks passed.", fg="green", bold=True)
     click.echo()
+
+
+def _show_governance(config_path: str) -> None:
+    """Show governance feature status from the local YAML."""
+    import yaml
+
+    try:
+        with open(config_path) as f:
+            raw = yaml.safe_load(f) or {}
+    except Exception:
+        return
+
+    features = []
+    dlp = raw.get("dlp")
+    if isinstance(dlp, dict) and dlp.get("mode", "off") != "off":
+        features.append(f"DLP: {dlp['mode']} mode")
+
+    cb = raw.get("circuit_breaker")
+    if isinstance(cb, dict):
+        threshold = cb.get("agent_level", {}).get("failure_threshold", "?")
+        features.append(f"Circuit Breaker: threshold {threshold}")
+
+    audit = raw.get("audit")
+    if isinstance(audit, dict) and audit.get("enabled", False):
+        features.append("Audit Trail: enabled")
+
+    if features:
+        click.echo(click.style("  [gov]    ", fg="green") + " │ ".join(features))

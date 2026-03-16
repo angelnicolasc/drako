@@ -1,4 +1,4 @@
-"""Governance policy rules (GOV-001 through GOV-006)."""
+"""Governance policy rules (GOV-001 through GOV-011)."""
 
 from __future__ import annotations
 
@@ -61,9 +61,6 @@ class GOV001(BasePolicy):
     title = "No audit logging configured"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        if not metadata.frameworks:
-            return []
-
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
@@ -258,6 +255,338 @@ class GOV006(BasePolicy):
 
 
 # ---------------------------------------------------------------------------
+# GOV-007: No per-tool failure handling
+# ---------------------------------------------------------------------------
+
+# Patterns indicating external I/O calls
+_EXTERNAL_CALL_PATTERNS = re.compile(
+    r"(?:requests\.|httpx\.|urllib\.|aiohttp\.|open\(|"
+    r"subprocess\.|os\.system|db\.|cursor\.|execute\(|"
+    r"fetch\(|download\(|upload\()",
+    re.IGNORECASE,
+)
+
+
+class GOV007(BasePolicy):
+    policy_id = "GOV-007"
+    category = "Governance"
+    severity = "MEDIUM"
+    title = "No per-tool failure handling"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        findings: list[Finding] = []
+
+        for tool in bom.tools:
+            content = metadata.file_contents.get(tool.file_path, "")
+            if not content:
+                continue
+
+            # Find the tool function body
+            func_match = re.search(
+                rf"def\s+{re.escape(tool.name)}\s*\(.*?\).*?(?=\ndef\s|\Z)",
+                content, re.DOTALL,
+            )
+            if not func_match:
+                continue
+
+            func_body = func_match.group()
+
+            # Does the tool make external calls?
+            if not _EXTERNAL_CALL_PATTERNS.search(func_body):
+                continue
+
+            # Does the tool have error handling?
+            has_try_except = "try:" in func_body and "except" in func_body
+
+            if not has_try_except:
+                findings.append(Finding(
+                    policy_id=self.policy_id,
+                    category=self.category,
+                    severity=self.severity,
+                    title=self.title,
+                    message=f'Tool "{tool.name}" makes external calls without error handling',
+                    file_path=tool.file_path,
+                    line_number=tool.line_number,
+                    code_snippet=f"# Tool: {tool.name} has no try/except around external calls",
+                    fix_snippet=(
+                        "@tool\n"
+                        "def my_tool(query: str) -> str:\n"
+                        "    try:\n"
+                        "        result = external_api.call(query)\n"
+                        "        return result\n"
+                        "    except (ConnectionError, TimeoutError) as e:\n"
+                        '        return f"Tool temporarily unavailable: {e}"'
+                    ),
+                ))
+
+        return findings
+
+
+# ---------------------------------------------------------------------------
+# GOV-008: No fallback defined for critical tools
+# ---------------------------------------------------------------------------
+
+_CRITICAL_TOOL_PATTERNS = re.compile(
+    r"(?:write|delete|remove|send|pay|transfer|execute|deploy|publish|post|push|submit)",
+    re.IGNORECASE,
+)
+
+_FALLBACK_PATTERNS = re.compile(
+    r"(?:fallback|retry|retries|backoff|tenacity|@retry|"
+    r"alternative|backup|redundant|failover|graceful_degrad)",
+    re.IGNORECASE,
+)
+
+
+class GOV008(BasePolicy):
+    policy_id = "GOV-008"
+    category = "Governance"
+    severity = "HIGH"
+    title = "No fallback for critical tool"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        findings: list[Finding] = []
+
+        for tool in bom.tools:
+            # Check if tool name suggests critical/side-effect operations
+            if not _CRITICAL_TOOL_PATTERNS.search(tool.name):
+                continue
+
+            content = metadata.file_contents.get(tool.file_path, "")
+            if not content:
+                continue
+
+            func_match = re.search(
+                rf"def\s+{re.escape(tool.name)}\s*\(.*?\).*?(?=\ndef\s|\Z)",
+                content, re.DOTALL,
+            )
+            if not func_match:
+                continue
+
+            func_body = func_match.group()
+
+            if _FALLBACK_PATTERNS.search(func_body):
+                continue
+
+            findings.append(Finding(
+                policy_id=self.policy_id,
+                category=self.category,
+                severity=self.severity,
+                title=self.title,
+                message=f'Critical tool "{tool.name}" has no fallback or retry logic',
+                file_path=tool.file_path,
+                line_number=tool.line_number,
+                code_snippet=f"# Tool: {tool.name} performs side-effects without fallback",
+                fix_snippet=(
+                    "from tenacity import retry, stop_after_attempt, wait_exponential\n\n"
+                    "@retry(stop=stop_after_attempt(3), wait=wait_exponential())\n"
+                    "def my_critical_tool(data: str) -> str:\n"
+                    "    result = api.send(data)\n"
+                    "    return result\n\n"
+                    "# Or define a fallback:\n"
+                    "def fallback_tool(data: str) -> str:\n"
+                    '    return "Operation queued for manual processing"'
+                ),
+            ))
+
+        return findings
+
+
+# ---------------------------------------------------------------------------
+# GOV-009: Agent can execute destructive actions autonomously
+# ---------------------------------------------------------------------------
+
+_HITL_REGEX = re.compile(
+    r"(?:human_in_the_loop|hitl|require_approval|human_approval|"
+    r"ask_human|confirm_action|manual_review|human_oversight|"
+    r"supervisor|approval_required|pending_approval|human_gate)",
+    re.IGNORECASE,
+)
+
+
+class GOV009(BasePolicy):
+    policy_id = "GOV-009"
+    category = "Governance"
+    severity = "CRITICAL"
+    title = "Agent can execute destructive actions autonomously"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        findings: list[Finding] = []
+
+        for tool in bom.tools:
+            if not _CRITICAL_TOOL_PATTERNS.search(tool.name):
+                continue
+
+            content = metadata.file_contents.get(tool.file_path, "")
+            if not content:
+                continue
+
+            # Extract the function body
+            func_match = re.search(
+                rf"def\s+{re.escape(tool.name)}\s*\(.*?\).*?(?=\ndef\s|\Z)",
+                content, re.DOTALL,
+            )
+            func_body = func_match.group() if func_match else content
+
+            if _HITL_REGEX.search(func_body):
+                continue
+
+            findings.append(Finding(
+                policy_id=self.policy_id,
+                category=self.category,
+                severity=self.severity,
+                title=self.title,
+                message=(
+                    f'Tool "{tool.name}" can execute destructive actions (delete/write/execute/pay) '
+                    f"without any human approval gate. This violates EU AI Act Art. 14."
+                ),
+                file_path=tool.file_path,
+                line_number=tool.line_number,
+                code_snippet=f"# Tool: {tool.name} has no HITL checkpoint",
+                fix_snippet=(
+                    "# Add HITL checkpoint in .agentmesh.yaml:\n"
+                    "hitl:\n"
+                    "  mode: enforce\n"
+                    "  triggers:\n"
+                    "    tools:\n"
+                    f"      - {tool.name}\n"
+                    "    tool_types:\n"
+                    "      - write\n"
+                    "      - execute\n"
+                    "      - payment"
+                ),
+            ))
+
+        return findings
+
+
+# ---------------------------------------------------------------------------
+# GOV-010: No escalation path defined
+# ---------------------------------------------------------------------------
+
+_ESCALATION_PATTERNS = re.compile(
+    r"(?:escalat|supervisor|admin_review|human_review|on_reject|"
+    r"on_failure.*human|fallback_human|approval_flow|notification.*webhook|"
+    r"notify_admin|alert_supervisor|escalation_policy)",
+    re.IGNORECASE,
+)
+
+
+class GOV010(BasePolicy):
+    policy_id = "GOV-010"
+    category = "Governance"
+    severity = "HIGH"
+    title = "No escalation path defined"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        if not bom.agents:
+            return []
+
+        all_content = "\n".join(
+            c for p, c in metadata.file_contents.items() if p.endswith(".py")
+        )
+        all_config = "\n".join(metadata.config_files.values())
+        combined = all_content + "\n" + all_config
+
+        if _ESCALATION_PATTERNS.search(combined):
+            return []
+
+        return [Finding(
+            policy_id=self.policy_id,
+            category=self.category,
+            severity=self.severity,
+            title=self.title,
+            message=(
+                "No escalation path defined for agent failures or policy violations. "
+                "When an agent encounters an error or a governance check blocks an action, "
+                "there is no mechanism to notify a supervisor or route to a human."
+            ),
+            fix_snippet=(
+                "# Define escalation in .agentmesh.yaml:\n"
+                "hitl:\n"
+                "  mode: enforce\n"
+                "  notification:\n"
+                '    webhook_url: "https://hooks.slack.com/services/xxx"\n'
+                '    email: "supervisor@company.com"\n'
+                "  approval_timeout_minutes: 30\n"
+                "  timeout_action: reject"
+            ),
+        )]
+
+
+# ---------------------------------------------------------------------------
+# GOV-011: Action replay vulnerability
+# ---------------------------------------------------------------------------
+
+_REPLAY_PROTECTION_PATTERNS = re.compile(
+    r"(?:nonce|idempotency_key|idempotent|replay_protect|sequence_number|"
+    r"intent_hash|request_id.*dedup|deduplicat|unique_request|"
+    r"already_processed|prevent_replay)",
+    re.IGNORECASE,
+)
+
+
+class GOV011(BasePolicy):
+    policy_id = "GOV-011"
+    category = "Governance"
+    severity = "HIGH"
+    title = "Action replay vulnerability"
+
+    def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
+        findings: list[Finding] = []
+
+        for tool in bom.tools:
+            if not _CRITICAL_TOOL_PATTERNS.search(tool.name):
+                continue
+
+            content = metadata.file_contents.get(tool.file_path, "")
+            if not content:
+                continue
+
+            func_match = re.search(
+                rf"def\s+{re.escape(tool.name)}\s*\(.*?\).*?(?=\ndef\s|\Z)",
+                content, re.DOTALL,
+            )
+            func_body = func_match.group() if func_match else content
+
+            if _REPLAY_PROTECTION_PATTERNS.search(func_body):
+                continue
+
+            findings.append(Finding(
+                policy_id=self.policy_id,
+                category=self.category,
+                severity=self.severity,
+                title=self.title,
+                message=(
+                    f'Tool "{tool.name}" can be called repeatedly without idempotency check. '
+                    f"A retry or replay could duplicate writes, payments, or destructive actions."
+                ),
+                file_path=tool.file_path,
+                line_number=tool.line_number,
+                code_snippet=f"# Tool: {tool.name} has no replay protection",
+                fix_snippet=(
+                    "# Add intent fingerprinting in .agentmesh.yaml:\n"
+                    "intent_verification:\n"
+                    "  mode: enforce\n"
+                    "  anti_replay: true\n"
+                    "  intent_ttl_seconds: 300\n"
+                    "  required_for:\n"
+                    "    tools:\n"
+                    f"      - {tool.name}\n\n"
+                    "# Or add idempotency in code:\n"
+                    "def my_tool(data: str, request_id: str) -> str:\n"
+                    "    if already_processed(request_id):\n"
+                    '        return "Already executed"\n'
+                    "    result = execute(data)\n"
+                    "    mark_processed(request_id)\n"
+                    "    return result"
+                ),
+            ))
+
+        return findings
+
+
+# ---------------------------------------------------------------------------
 # Export
 # ---------------------------------------------------------------------------
 
@@ -268,4 +597,9 @@ GOVERNANCE_POLICIES: list[BasePolicy] = [
     GOV004(),
     GOV005(),
     GOV006(),
+    GOV007(),
+    GOV008(),
+    GOV009(),
+    GOV010(),
+    GOV011(),
 ]

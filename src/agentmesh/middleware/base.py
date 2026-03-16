@@ -53,23 +53,46 @@ class ComplianceMiddleware:
         return did
 
     def _check_policy(self, action: str, agent_did: str, context: dict | None = None) -> dict:
-        """Evaluate policy and raise if denied."""
+        """Evaluate policy and raise if denied. Also checks IOC cache."""
+        # IOC cache check: block known-malicious tool args before policy eval
+        ctx = context or {}
+        tool_name = ctx.get("tool_name", action)
+        tool_args_str = str(ctx.get("payload_preview", ctx.get("tool_args", "")))
+        if tool_args_str:
+            ioc_match = self._client.check_ioc_sync(tool_name, tool_args_str)
+            if ioc_match and ioc_match.get("action") == "blocked":
+                raise PolicyViolationError(
+                    detail=f"Blocked by collective intelligence: known IOC (severity {ioc_match.get('severity')})",
+                    policy_id="collective_intel_ioc",
+                )
+
         result = self._client.evaluate_policy_sync(action=action, agent_did=agent_did, context=context)
         decision = result.get("decision", result.get("allowed", True))
-        if decision in (False, "BLOCKED"):
+        if decision in (False, "BLOCKED", "rejected"):
             raise PolicyViolationError(
-                detail=result.get("reason", "Action blocked by policy"),
+                detail=result.get("reason", result.get("reasoning", "Action blocked by policy")),
                 policy_id=result.get("blocking_policy", result.get("policy_id")),
             )
         return result
 
     async def _check_policy_async(self, action: str, agent_did: str, context: dict | None = None) -> dict:
-        """Async version of _check_policy."""
+        """Async version of _check_policy. Also checks IOC cache."""
+        ctx = context or {}
+        tool_name = ctx.get("tool_name", action)
+        tool_args_str = str(ctx.get("payload_preview", ctx.get("tool_args", "")))
+        if tool_args_str:
+            ioc_match = await self._client.check_ioc(tool_name, tool_args_str)
+            if ioc_match and ioc_match.get("action") == "blocked":
+                raise PolicyViolationError(
+                    detail=f"Blocked by collective intelligence: known IOC (severity {ioc_match.get('severity')})",
+                    policy_id="collective_intel_ioc",
+                )
+
         result = await self._client.evaluate_policy(action=action, agent_did=agent_did, context=context)
         decision = result.get("decision", result.get("allowed", True))
-        if decision in (False, "BLOCKED"):
+        if decision in (False, "BLOCKED", "rejected"):
             raise PolicyViolationError(
-                detail=result.get("reason", "Action blocked by policy"),
+                detail=result.get("reason", result.get("reasoning", "Action blocked by policy")),
                 policy_id=result.get("blocking_policy", result.get("policy_id")),
             )
         return result

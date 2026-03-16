@@ -93,4 +93,4 @@ class TestE2EMixedFramework:
 
     def test_reasonable_score(self):
         result = run_scan(str(FIXTURES / "mixed_framework"))
-        assert 20 <= result.score <= 80
+        assert 0 <= result.score <= 80

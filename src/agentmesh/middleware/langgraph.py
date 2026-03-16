@@ -77,7 +77,12 @@ class AgentMeshCheckpointer(ComplianceMiddleware):
 
         if self._auto_policy:
             try:
-                self._check_policy(f"langgraph_transition:{node_name}", agent_did)
+                context = {
+                    "tool_name": node_name,
+                    "task_id": f"lg_{checkpoint.get('ts', 'unknown')}",
+                    "scope": "default",
+                }
+                self._check_policy(f"langgraph_transition:{node_name}", agent_did, context=context)
             except Exception:
                 raise
 
@@ -97,7 +102,12 @@ class AgentMeshCheckpointer(ComplianceMiddleware):
         agent_did = self._agent_dids.get(node_name, node_name)
 
         if self._auto_policy:
-            await self._check_policy_async(f"langgraph_transition:{node_name}", agent_did)
+            context = {
+                "tool_name": node_name,
+                "task_id": f"lg_{checkpoint.get('ts', 'unknown')}",
+                "scope": "default",
+            }
+            await self._check_policy_async(f"langgraph_transition:{node_name}", agent_did, context=context)
 
         if self._auto_audit:
             try:

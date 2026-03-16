@@ -11,7 +11,6 @@ def main():
     scripts = [
         "bench_policy_engine.py",
         "bench_discovery.py",
-        "bench_dlp.py"
     ]
     
     for script in scripts:

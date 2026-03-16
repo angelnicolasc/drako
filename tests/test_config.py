@@ -85,7 +85,7 @@ class TestConfigResolveApiKey:
 
     def test_resolve_missing_raises(self):
         config = AgentMeshConfig(tenant_id="t1")
-        with pytest.raises(ConfigError, match="not set"):
+        with pytest.raises(ConfigError, match="not found"):
             config.resolve_api_key()
 
 
