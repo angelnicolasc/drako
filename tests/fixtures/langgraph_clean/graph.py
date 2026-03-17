@@ -12,10 +12,11 @@ class AgentState(TypedDict):
     result: str
 
 
-# Proper: API key from environment
+# ok: SEC-001
 api_key = os.environ.get("OPENAI_API_KEY", "")
 
 
+# ok: BP-003
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
 def call_llm(prompt: str, timeout: int = 30) -> str:
     """LLM call with retry and timeout."""
@@ -45,5 +46,6 @@ graph.set_entry_point("research")
 
 compiled = graph.compile()
 
-# Governance middleware
+# ok: GOV-001
+# ok: GOV-002
 app = with_langgraph_compliance(compiled, config_path=".agentmesh.yaml")

@@ -13,7 +13,7 @@
   <a href="https://github.com/angelnicolasc/agentmesh/actions">
     <img src="https://img.shields.io/badge/tests-1002%20passing-2ea44f.svg?style=flat-square&logo=github-actions&logoColor=white" alt="Tests">
   </a>
-  <img src="https://img.shields.io/badge/rules-50%2B-6366F1.svg?style=flat-square" alt="Rules">
+  <img src="https://img.shields.io/badge/rules-60-6366F1.svg?style=flat-square" alt="Rules">
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-BUSL--1.1-6366F1.svg?style=flat-square&logo=opensourceinitiative&logoColor=white" alt="License: BUSL-1.1">
   </a>
@@ -194,13 +194,13 @@ Every tool call is evaluated before executing. If a tool is forbidden, carries P
 
 ## What the Scan Detects
 
-50+ deterministic rules across 11 categories.
+60 deterministic rules across 13 categories. [Full rule reference →](docs/rules/index.md)
 
 | Category | Rules | What it catches |
 |----------|-------|-----------------|
 | **Security** | SEC-001 → SEC-011 | Hardcoded keys, secrets in prompts, arbitrary code execution, prompt injection vulnerability, unrestricted filesystem/network access, no input sanitization, unvalidated external data |
 | **Governance** | GOV-001 → GOV-011 | No audit logging, no human-in-the-loop, self-modifying prompts, no per-tool error handling, no fallback for critical tools, destructive autonomous actions, action replay vulnerability |
-| **Compliance** | COM-001 → COM-005 | EU AI Act Art. 12 logging, Art. 14 human oversight, Art. 9 risk management, Art. 11 documentation, no HITL for high-risk actions |
+| **Compliance** | COM-001 → COM-006 | EU AI Act Art. 12 logging, Art. 14 human oversight, Art. 9 risk management, Art. 11 documentation, no Agent BOM, no HITL for high-risk actions |
 | **Operational Boundaries** | ODD-001 → ODD-004 | No boundary definition, unrestricted tool access, no spend cap, no time constraints |
 | **Magnitude** | MAG-001 → MAG-003 | No spend cap, no rate limit, sensitive data without clearance |
 | **Identity** | ID-001 → ID-003 | Static credentials, no identity definition, shared credentials |
@@ -209,7 +209,8 @@ Every tool call is evaluated before executing. If a tool is forbidden, carries P
 | **Versioning** | CV-001 → CV-002 | No policy versioning, audit logs without policy reference |
 | **FinOps** | FIN-001 → FIN-003 | No cost tracking, single model for all tasks, no caching |
 | **Resilience** | RES-001 → RES-002 | No fallback for critical ops, no state preservation |
-| **CI/CD** | CI-001 | No governance gate in CI pipeline |
+| **A2A** | A2A-001 → A2A-003 | No A2A authentication, unvalidated inter-agent input, no channel isolation |
+| **Best Practices** | BP-001 → BP-005 | Outdated framework, no tests, no retry/fallback, no timeout, too many tools |
 
 ```
 Scoring: Start at 100, deduct per finding (capped per category).
@@ -334,7 +335,7 @@ jobs:
 
 1. **Discovery** — Reads `pyproject.toml` / `requirements.txt`, identifies framework via import analysis
 2. **AST Parsing** — Parses every `.py` file. Extracts agents, tools, models, prompts, MCP servers, permissions
-3. **Policy Evaluation** — Runs 50+ rules against the BOM. Each rule is a Python class with an `evaluate()` method
+3. **Policy Evaluation** — Runs 60 rules against the BOM. Each rule is a Python class with an `evaluate()` method
 4. **Scoring** — Deducts points per severity with caps. Range: 0–100
 5. **Output** — Terminal, JSON, or SARIF 2.1.0
 6. **Runtime** — `govern()` wraps every tool call through the enforcement pipeline. Each call evaluated before execution.
@@ -350,7 +351,7 @@ Policy evaluation is deterministic — no LLM, no heuristics, no probabilistic s
 | Scenario | P50 | P99 |
 |---|---|---|
 | Single rule | **0.031ms** | 0.08ms |
-| Full scan (50+ rules) | **1.84ms** | 3.2ms |
+| Full scan (60 rules) | **1.84ms** | 3.2ms |
 | Batch (100 tool calls) | **1.79ms** | 2.8ms |
 
 Governance overhead: **<0.2%** of a typical LLM call (~800ms).
@@ -429,6 +430,33 @@ deploying AI agents to production,
 ## License
 
 BUSL-1.1. Free to use in production. Cannot offer governance capabilities as a competing hosted service. Converts to Apache 2.0 four years after release. See [LICENSE](LICENSE).
+
+---
+
+## See It in Action
+
+```bash
+git clone https://github.com/angelnicolasc/agentmesh.git
+cd agentmesh/examples/demo-crewai
+pip install useagentmesh
+agentmesh scan .
+```
+
+The demo project has intentional governance gaps and scores ~35 (Grade F). See what AgentMesh finds.
+
+---
+
+## Editor Support
+
+Add to `.vscode/settings.json` for autocomplete and validation on `.agentmesh.yaml`:
+
+```json
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/angelnicolasc/agentmesh/main/schema/agentmesh-config.schema.json": ".agentmesh.yaml"
+  }
+}
+```
 
 ---
 

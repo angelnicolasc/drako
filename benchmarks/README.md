@@ -13,15 +13,16 @@ Professional benchmark suite for measuring the latency and overhead of the Agent
 
 *   `bench_policy_engine.py`: Evaluates deterministic rules via `agentmesh.cli.policies`. We target `<10ms` for full AST policy inference scans to claim that governance is `<1%` of an average LLM call overhead (~800ms).
 *   `bench_discovery.py`: Latency of offline Agent/Tool/Model and framework Discovery (AST parser).
-*   `bench_dlp.py`: Local PII/PCI scanning through Microsoft Presidio.
-
 ## Running
 
-It is recommended to run benchmarks in a virtual environment with `rich` installed for best formatting.
-
 ```bash
-python sdk/benchmarks/run_all.py
+pip install useagentmesh
+python benchmarks/run_all.py
 ```
+
+Results are saved to `benchmarks/results/` as JSON and SVG badge.
+
+**Hardware for last published results:** benchmarks run on commodity hardware (any modern laptop). Results are relative, not absolute — the important metric is overhead as a percentage of a typical LLM call (~800ms).
 
 ### Competitor Comparison
 

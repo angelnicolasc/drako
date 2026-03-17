@@ -3,7 +3,7 @@ import subprocess
 import os
 from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 
-# SEC-001: Hardcoded API key
+# ruleid: SEC-001
 api_key = "sk-ant-api03-secretkeyvalue1234567890abcdef"
 
 # Agents
@@ -23,26 +23,29 @@ manager = GroupChatManager(
 )
 
 
-# SEC-005: Multiple dangerous execution patterns
+# ruleid: SEC-005
 def execute_code(code):
     """Execute user-provided code — critical vulnerability."""
     exec(code)
 
 
+# ruleid: SEC-005
 def evaluate_expression(expr):
     """Evaluate expression — critical vulnerability."""
     return eval(expr)
 
 
+# ruleid: SEC-005
 def run_shell(command):
     """Run shell command — critical vulnerability."""
     subprocess.run(command, shell=True)
     os.system(command)
 
 
-# SEC-007: Prompt injection
+# ruleid: SEC-007
 user_input = "some user input"
 system_prompt = f"You are a helpful assistant. The user says: {user_input}"
+# ruleid: SEC-007
 instruction_prompt = "Act as {role}. Execute: {command}".format(
     role="admin", command=user_input
 )
