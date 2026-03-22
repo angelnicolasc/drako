@@ -1,0 +1,68 @@
+id: DRAKO-ABSS-2026-024
+title: "Multi-Turn Context Manipulation and Gradual Goal Drift"
+category: prompt-injection
+severity: 7
+confidence: 0.85
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent maintains conversation history across multiple turns"
+    - "No periodic re-validation of conversation context against system prompt"
+    - "No turn-level input validation or anomaly detection"
+    - "Agent accumulates context without bounds or summarization checkpoints"
+
+ioc:
+  type: CONTEXT_MANIPULATION
+  patterns:
+    - "as we agreed earlier"
+    - "remember when you said"
+    - "based on our previous discussion"
+    - "you already confirmed"
+    - "we established that"
+    - "continuing from where we left off"
+    - "as per your earlier response"
+    - "you promised to"
+  pattern_hashes:
+    - "d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4"
+    - "e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5"
+    - "f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6"
+    - "a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7"
+
+taint_path:
+  source: "user_input_across_multiple_turns"
+  sink: "agent_policy_violation"
+  via:
+    - "Attacker sends benign messages in early turns to build trust"
+    - "Gradually introduces small deviations from expected behavior"
+    - "References fabricated prior agreements to shift agent behavior"
+    - "Agent's context window fills with manipulated history"
+    - "Eventually tricks agent into performing unauthorized actions"
+
+references:
+  - type: owasp
+    id: "LLM01:2025"
+    url: "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+  - type: research
+    id: "Multi-Turn-Attacks-2024"
+    url: "https://arxiv.org/abs/2404.16563"
+  - type: mitre_atlas
+    id: "AML.T0051"
+    url: "https://atlas.mitre.org/techniques/AML.T0051"
+
+mitigation:
+  drako_rules: [SEC-007, GOV-001]
+  description: >
+    Implement conversation integrity checks that periodically re-validate agent
+    behavior against the original system prompt. Use bounded context windows with
+    summarization checkpoints to prevent unbounded context accumulation. Apply
+    per-turn input validation to detect references to non-existent prior agreements.
+    Implement session-level anomaly detection to flag gradual behavioral drift.
+    Consider stateless agent architectures where each turn re-evaluates from
+    the system prompt rather than relying on accumulated context.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

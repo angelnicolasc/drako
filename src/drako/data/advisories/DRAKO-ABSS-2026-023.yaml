@@ -1,0 +1,74 @@
+id: DRAKO-ABSS-2026-023
+title: "Indirect Prompt Injection via External Data Sources"
+category: prompt-injection
+severity: 9
+confidence: 0.93
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent retrieves and processes content from external sources (web, documents, APIs)"
+    - "Retrieved content is injected into agent context without sanitization"
+    - "No distinction between trusted instructions and untrusted data in context"
+    - "RAG pipeline does not filter adversarial content from retrieved chunks"
+
+ioc:
+  type: INDIRECT_INJECTION
+  patterns:
+    - "IMPORTANT: ignore previous"
+    - "NEW INSTRUCTIONS:"
+    - "OVERRIDE:"
+    - "SYSTEM UPDATE:"
+    - "ADMIN NOTICE:"
+    - "<!-- INSTRUCTION:"
+    - "[HIDDEN PROMPT]"
+    - "BEGIN HIDDEN TEXT"
+    - "PRIORITY OVERRIDE"
+    - "URGENT SYSTEM MESSAGE"
+  pattern_hashes:
+    - "e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9"
+    - "f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+    - "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1"
+    - "b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2"
+    - "c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3"
+
+taint_path:
+  source: "external_data_source (web page, document, email, API response)"
+  sink: "agent_action_execution"
+  via:
+    - "Attacker embeds injection payload in external content (web page, PDF, email)"
+    - "Agent's tool retrieves the malicious content as part of its task"
+    - "Retrieved content containing injection is added to agent context"
+    - "LLM interprets embedded instructions as legitimate agent directives"
+    - "Agent executes attacker-controlled actions (data exfiltration, tool abuse)"
+
+references:
+  - type: research
+    id: "Indirect-Prompt-Injection"
+    url: "https://arxiv.org/abs/2302.12173"
+  - type: owasp
+    id: "LLM01:2025"
+    url: "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+  - type: research
+    id: "Not-What-You-Signed-Up-For"
+    url: "https://arxiv.org/abs/2302.12173"
+  - type: mitre_atlas
+    id: "AML.T0051"
+    url: "https://atlas.mitre.org/techniques/AML.T0051"
+
+mitigation:
+  drako_rules: [SEC-007, SEC-008, GOV-002]
+  description: >
+    Treat all externally retrieved content as untrusted data. Implement data
+    provenance tagging to distinguish system instructions from retrieved content.
+    Apply content sanitization to strip potential injection patterns from external
+    data before adding to agent context. Use structured prompt formats that
+    clearly separate instructions from data (e.g., XML tags, delimiters). Deploy
+    a secondary LLM classifier to detect injection attempts in retrieved content.
+    Limit agent tool permissions to reduce the impact of successful injections.
+  remediation_effort: significant
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

@@ -140,7 +140,7 @@ def upgrade(level: str | None, config_path: str, yes: bool) -> None:
     # For simplicity, write clean YAML with a header comment
     header = f"# Drako Configuration - governance_level: {level}\n"
     header += "# Upgraded with: drako upgrade --" + level + "\n"
-    header += "# Docs: https://docs.useagentmesh.com/config\n\n"
+    header += "# Docs: https://docs.getdrako.com/config\n\n"
 
     yaml_body = yaml.dump(raw, default_flow_style=False, sort_keys=False, allow_unicode=True)
     path.write_text(header + yaml_body, encoding="utf-8")

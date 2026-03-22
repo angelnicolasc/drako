@@ -81,6 +81,10 @@ class ODD001(BasePolicy):
     category = "Operational"
     severity = "CRITICAL"
     title = "No operational boundary definition"
+    impact = "Agents without declared operational boundaries can access any tool, spend any amount, and run indefinitely."
+    attack_scenario = "Agent given broad tool access autonomously accesses production database and deletes records outside its intended scope."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # ODD requires the Drako platform — offline scan ALWAYS fires
@@ -92,11 +96,7 @@ class ODD001(BasePolicy):
         count = len(bom.agents)
         suffix = f" (and {count - 5} more)" if count > 5 else ""
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No Operational Design Domain (ODD) defined for {count} agent(s): "
                 f"{agent_names}{suffix}. Agents operate without declared boundaries. "
@@ -115,6 +115,10 @@ class ODD002(BasePolicy):
     category = "Operational"
     severity = "HIGH"
     title = "Unrestricted tool access"
+    impact = "Without a tool allowlist, agents can use any registered tool \u2014 including dangerous ones outside their intended scope."
+    attack_scenario = "Research agent intended only for web search also has access to delete_file tool. Prompt injection triggers file deletion."
+    references = ["https://cwe.mitre.org/data/definitions/269.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Only relevant if agents have tools
@@ -133,11 +137,7 @@ class ODD002(BasePolicy):
         for agent in agents_with_tools:
             tool_list = ", ".join(agent.tools[:5])
             suffix = f" (+{len(agent.tools) - 5} more)" if len(agent.tools) > 5 else ""
-            findings.append(Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            findings.append(self._finding(
                 message=(
                     f'Agent "{agent.name}" has {len(agent.tools)} tool(s) '
                     f"({tool_list}{suffix}) without a tool allowlist. "
@@ -159,6 +159,10 @@ class ODD003(BasePolicy):
     category = "Operational"
     severity = "HIGH"
     title = "No spend cap"
+    impact = "Without token/cost limits, a single malfunctioning agent can exhaust the entire LLM budget in one session."
+    attack_scenario = "Agent enters a reasoning loop, generating 500K tokens. Without spend cap, the session costs $2,000 before detection."
+    references = ["https://cwe.mitre.org/data/definitions/770.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -172,11 +176,7 @@ class ODD003(BasePolicy):
         if _content_has_pattern(all_content, _SPEND_CAP_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No spend cap detected across {len(bom.agents)} agent(s). "
                 f"Without max_tokens, budget, or cost limits, agents can "
@@ -195,6 +195,10 @@ class ODD004(BasePolicy):
     category = "Operational"
     severity = "MEDIUM"
     title = "No time constraints"
+    impact = "Agents without iteration/time limits can run indefinitely, consuming compute and blocking downstream workflows."
+    attack_scenario = "Agent stuck in a retry loop runs for 8 hours overnight. Without max_iterations, nobody notices until morning."
+    references = ["https://cwe.mitre.org/data/definitions/835.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -207,11 +211,7 @@ class ODD004(BasePolicy):
         if _content_has_pattern(all_content, _TIME_CONSTRAINT_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No time constraints detected across {len(bom.agents)} agent(s). "
                 f"Without timeout, max_iterations, or step limits, agents can "

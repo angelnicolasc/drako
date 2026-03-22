@@ -17,6 +17,7 @@ from rich.syntax import Syntax
 from rich import box
 
 if TYPE_CHECKING:
+    from drako.benchmark import BenchmarkResult
     from drako.cli.bom import AgentBOM
     from drako.cli.discovery import ProjectMetadata
     from drako.cli.policies.base import Finding
@@ -50,40 +51,7 @@ _SEVERITY_EMOJI = {
 
 
 # ---------------------------------------------------------------------------
-# Risk tagline mapping (Item 7)
-# ---------------------------------------------------------------------------
-
-_RISK_TAGLINES: dict[str, str] = {
-    "SEC-005": "Your agents can execute arbitrary code.",
-    "SEC-001": "API keys are exposed in source code.",
-    "GOV-006": "Agents can rewrite their own instructions.",
-    "SEC-007": "Agents are vulnerable to prompt injection.",
-    "SEC-003": "Tools have unrestricted filesystem access.",
-    "SEC-004": "Tools have unrestricted network access.",
-    "MAG-001": "No spend caps \u2014 agents can consume unlimited resources.",
-    "ODD-001": "Agents operate without defined boundaries.",
-}
-
-_SEVERITY_RISK = {
-    "CRITICAL": ("\U0001f6a8", "CRITICAL", "red"),
-    "HIGH": ("\U0001f6a8", "HIGH", "dark_orange"),
-    "MEDIUM": ("\u26a0\ufe0f", "MODERATE", "yellow"),
-    "LOW": ("\u2139\ufe0f", "LOW", "blue"),
-}
-
-_CATEGORY_ORDER = [
-    ("Security", "\U0001f6e1\ufe0f"),
-    ("Governance", "\U0001f3db\ufe0f"),
-    ("Compliance", "\U0001f4dc"),
-    ("Operational", "\u2699\ufe0f"),
-    ("Magnitude", "\U0001f4cf"),
-    ("Identity", "\U0001f511"),
-    ("Best Practices", "\u2728"),
-]
-
-
-# ---------------------------------------------------------------------------
-# Helpers
+# Score bar rendering
 # ---------------------------------------------------------------------------
 
 def _render_score_bar(score: int) -> str:
@@ -93,191 +61,39 @@ def _render_score_bar(score: int) -> str:
     return "\u2588" * filled + "\u2591" * empty
 
 
-def _generate_risk_tagline(findings: list[Finding]) -> tuple[str, str, str, str] | None:
-    """Return (emoji, risk_level, color, tagline) for the most critical finding."""
-    if not findings:
-        return None
-
-    severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
-    top = min(findings, key=lambda f: severity_order.get(f.severity, 99))
-
-    tagline = _RISK_TAGLINES.get(top.policy_id)
-    if not tagline:
-        tagline = {
-            "CRITICAL": "Critical governance gaps detected.",
-            "HIGH": "Significant governance gaps need attention.",
-            "MEDIUM": "Moderate improvements recommended.",
-            "LOW": "Minor improvements suggested.",
-        }.get(top.severity, "Review findings above.")
-
-    info = _SEVERITY_RISK.get(top.severity, ("\u2022", "UNKNOWN", "white"))
-    return info[0], info[1], info[2], tagline
-
-
-def _render_score_section(
-    score: int | None,
-    grade: str | None,
-    findings: list[Finding],
-    console: Console,
-) -> None:
-    """Render governance score + risk tagline (shared by compact & detailed)."""
-    if score is None:
-        console.print("  \u26a0  [bold yellow]No agent frameworks detected \u2014 score: N/A[/bold yellow]")
-        console.print("     [dim]Try scanning a Python project that uses CrewAI, LangGraph, or AutoGen.[/dim]")
-    else:
-        grade_color = _GRADE_COLORS.get(grade, "white")
-        bar = _render_score_bar(score)
-
-        score_text = Text()
-        score_text.append("\U0001f4ca GOVERNANCE SCORE: ", style="bold")
-        score_text.append(f"{score}/100 ", style=f"bold {grade_color}")
-        score_text.append(f"[{grade}] ", style=f"bold {grade_color}")
-        score_text.append(bar, style=grade_color)
-        score_text.append(f" {score}%", style=f"dim {grade_color}")
-
-        console.print(Panel(score_text, border_style=grade_color))
-
-    console.print()
-
-    # Risk tagline
-    if score is not None and findings:
-        risk = _generate_risk_tagline(findings)
-        if risk:
-            emoji, level, color, tagline = risk
-            console.print(
-                f"  {emoji} [bold {color}]Risk Level: {level}[/bold {color}]"
-                f" \u2014 {tagline}"
-            )
-            console.print()
-
-
-def _severity_counts(findings: list[Finding]) -> dict[str, int]:
-    counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-    for f in findings:
-        if f.severity in counts:
-            counts[f.severity] += 1
-    return counts
-
-
 # ---------------------------------------------------------------------------
-# Compact report (default)
+# Main render function
 # ---------------------------------------------------------------------------
 
-def _render_compact_report(
+def render_report(
     bom: AgentBOM,
     findings: list[Finding],
-    score: int | None,
-    grade: str | None,
+    score: int,
+    grade: str,
     metadata: ProjectMetadata,
     scan_duration_ms: int,
-    console: Console,
+    console: Console | None = None,
+    details: bool = False,
+    baselined_count: int = 0,
+    resolved_count: int = 0,
+    determinism_score: int | None = None,
+    determinism_grade: str | None = None,
+    matched_advisories: dict | None = None,
+    reachability: list | None = None,
 ) -> None:
-    """Render a compact summary report (default mode)."""
-    console.print()
+    """Render the full scan report to the terminal.
 
-    # ---- Header (condensed) ----
-    framework_str = ", ".join(
-        f"{fw.name} {fw.version or ''}".strip() for fw in bom.frameworks
-    ) if bom.frameworks else "No framework detected"
+    If *console* is None a new Console writing to stderr is created.
+    Pass a ``Console(file=StringIO())`` for testing.
+    """
+    if console is None:
+        console = Console(stderr=True)
 
-    header = Text()
-    header.append("\U0001f4c1 ", style="bold")
-    header.append(str(metadata.root.name), style="bold cyan")
-    header.append(f"  \u2502  {framework_str}", style="dim")
-    header.append(f"  \u2502  {scan_duration_ms / 1000:.1f}s", style="dim")
-
-    console.print(Panel(
-        header,
-        title="[bold cyan]Drako Scan[/bold cyan]",
-        border_style="cyan",
-        padding=(0, 2),
-    ))
-    console.print()
-
-    # ---- BOM one-liner ----
-    console.print(
-        f"  \U0001f3d7\ufe0f  Agent BOM: "
-        f"[cyan]{len(bom.agents)}[/cyan] agents \u2502 "
-        f"[cyan]{len(bom.tools)}[/cyan] tools \u2502 "
-        f"[cyan]{len(bom.models)}[/cyan] models \u2502 "
-        f"[cyan]{len(bom.prompts)}[/cyan] prompts"
-    )
-    console.print()
-
-    # ---- Governance Score + Risk Tagline ----
-    _render_score_section(score, grade, findings, console)
-
-    # ---- Findings ----
-    if score is not None:
-        counts = _severity_counts(findings)
-
-        if any(counts.values()):
-            # Severity count table
-            parts = []
-            for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-                if counts[sev] > 0:
-                    color = _SEVERITY_COLORS[sev]
-                    emoji = _SEVERITY_EMOJI[sev]
-                    parts.append(f"  {emoji} [{color}]{sev}[/{color}]  [bold]{counts[sev]}[/bold]")
-            console.print("\n".join(parts))
-            console.print()
-
-            # Top 3 issues
-            severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
-            top = sorted(findings, key=lambda f: severity_order.get(f.severity, 99))[:3]
-            console.print("  [bold]Top Issues[/bold]")
-            for f in top:
-                color = _SEVERITY_COLORS.get(f.severity, "white")
-                file_hint = ""
-                if f.file_path:
-                    file_hint = f" [dim]({f.file_path})[/dim]"
-                console.print(
-                    f"  \u2022 [{color}]{f.policy_id}[/{color}]  {f.title}{file_hint}"
-                )
-            console.print()
-        else:
-            console.print("  \u2705 [green]No findings! Excellent governance.[/green]")
-            console.print()
-
-    # ---- CTA ----
-    console.print(
-        "\U0001f449 [bold cyan]drako scan --details[/bold cyan]"
-        "    Full findings with code snippets and fix suggestions"
-    )
-    console.print(
-        "\U0001f449 [bold cyan]drako fix --dry-run[/bold cyan]"
-        "     Preview auto-fixes without modifying files"
-    )
-    console.print()
-    console.print(
-        "   [cyan]drako init[/cyan]              "
-        "Connect to Drako for runtime governance"
-    )
-    console.print(
-        "   [dim]https://useagentmesh.com[/dim]"
-    )
-    console.print()
-
-
-# ---------------------------------------------------------------------------
-# Detailed report (--details)
-# ---------------------------------------------------------------------------
-
-def _render_detailed_report(
-    bom: AgentBOM,
-    findings: list[Finding],
-    score: int | None,
-    grade: str | None,
-    metadata: ProjectMetadata,
-    scan_duration_ms: int,
-    console: Console,
-) -> None:
-    """Render the full detailed report (--details mode)."""
     console.print()
 
     # ---- Header Panel ----
     framework_str = ", ".join(
-        f"{fw.name} {fw.version or ''}".strip() for fw in bom.frameworks
+        f"{fw.name} {fw.version or ''}" for fw in bom.frameworks
     ) if bom.frameworks else "No framework detected"
 
     header = Text()
@@ -294,6 +110,7 @@ def _render_detailed_report(
         border_style="cyan",
         padding=(1, 2),
     ))
+
     console.print()
 
     # ---- Agent BOM Table ----
@@ -327,143 +144,181 @@ def _render_detailed_report(
     console.print(bom_table)
     console.print()
 
-    # ---- Governance Score + Risk Tagline ----
-    _render_score_section(score, grade, findings, console)
+    # ---- Governance Score ----
+    grade_color = _GRADE_COLORS.get(grade, "white")
+    bar = _render_score_bar(score)
 
-    # ---- Findings by Category, then Severity (Item 6) ----
-    if score is not None:
-        findings_by_cat: dict[str, list[Finding]] = {}
-        for f in findings:
-            findings_by_cat.setdefault(f.category, []).append(f)
+    score_text = Text()
+    score_text.append("\U0001f4ca GOVERNANCE SCORE: ", style="bold")
+    score_text.append(f"{score}/100 ", style=f"bold {grade_color}")
+    score_text.append(f"[{grade}] ", style=f"bold {grade_color}")
+    score_text.append(bar, style=grade_color)
+    score_text.append(f" {score}%", style=f"dim {grade_color}")
 
-        severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    # ---- Determinism Score (if available) ----
+    if determinism_score is not None and determinism_grade is not None:
+        det_color = _GRADE_COLORS.get(determinism_grade, "white")
+        det_bar = _render_score_bar(determinism_score)
 
-        for cat_name, cat_emoji in _CATEGORY_ORDER:
-            cat_findings = findings_by_cat.get(cat_name, [])
-            if not cat_findings:
-                continue
+        score_text.append("\n")
+        score_text.append("\U0001f3af DETERMINISM SCORE: ", style="bold")
+        score_text.append(f"{determinism_score}/100 ", style=f"bold {det_color}")
+        score_text.append(f"[{determinism_grade}] ", style=f"bold {det_color}")
+        score_text.append(det_bar, style=det_color)
+        score_text.append(f" {determinism_score}%", style=f"dim {det_color}")
 
-            cat_findings.sort(key=lambda f: severity_order.get(f.severity, 99))
-            cat_count = len(cat_findings)
+    console.print(Panel(score_text, border_style=grade_color))
+    console.print()
 
-            console.print(
-                f"\n{cat_emoji} [bold underline]{cat_name.upper()}[/bold underline]"
-                f" ({cat_count} finding{'s' if cat_count != 1 else ''})"
-            )
+    # ---- Reachability summary ----
+    if reachability:
+        from drako.reachability import ReachabilityStatus
+        r_counts = {"reachable": 0, "potentially_reachable": 0, "unreachable": 0}
+        for tr in reachability:
+            r_counts[tr.status.value] += 1
+        if any(v > 0 for v in r_counts.values()):
+            r_parts = []
+            if r_counts["reachable"]:
+                r_parts.append(f"[red]{r_counts['reachable']} reachable[/red]")
+            if r_counts["potentially_reachable"]:
+                r_parts.append(f"[yellow]{r_counts['potentially_reachable']} potentially reachable[/yellow]")
+            if r_counts["unreachable"]:
+                r_parts.append(f"[dim]{r_counts['unreachable']} unreachable[/dim]")
+            console.print(f"\U0001f517 Tool Reachability: " + " \u2502 ".join(r_parts))
             console.print()
 
-            for f in cat_findings:
-                color = _SEVERITY_COLORS.get(f.severity, "white")
-                emoji = _SEVERITY_EMOJI.get(f.severity, "\u2022")
+    # ---- Findings by Severity ----
+    findings_by_severity: dict[str, list[Finding]] = {}
+    for f in findings:
+        findings_by_severity.setdefault(f.severity, []).append(f)
 
-                location = ""
-                if f.file_path:
-                    location = f"  File: {f.file_path}"
-                    if f.line_number:
-                        location += f":{f.line_number}"
+    for severity in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+        items = findings_by_severity.get(severity, [])
+        if not items:
+            continue
 
-                finding_text = Text()
-                finding_text.append(f"  {emoji} ", style=f"bold {color}")
-                finding_text.append(f"{f.policy_id}", style=f"bold {color}")
-                finding_text.append(f" [{f.severity}]", style=f"{color}")
-                finding_text.append(f" \u2502 {f.title}\n", style="bold")
-                finding_text.append(f"    {f.message}\n", style="white")
-                if location:
-                    finding_text.append(f"  {location}\n", style="dim")
-                if f.code_snippet:
-                    finding_text.append(f"    Found: ", style="dim")
-                    finding_text.append(f"{f.code_snippet}\n", style="dim italic")
+        color = _SEVERITY_COLORS.get(severity, "white")
+        emoji = _SEVERITY_EMOJI.get(severity, "\u2022")
 
-                console.print(finding_text, end="")
+        console.print(
+            f"{emoji} [bold {color}]{severity}[/bold {color}] ({len(items)} finding{'s' if len(items) != 1 else ''})",
+        )
+        console.print()
 
-                if f.fix_snippet:
-                    console.print(f"    [bold green]Fix:[/bold green]")
-                    console.print(Syntax(
-                        f.fix_snippet,
-                        "python",
-                        theme="monokai",
-                        line_numbers=False,
-                        padding=1,
-                    ))
+        for f in items:
+            # Finding header
+            location = ""
+            if f.file_path:
+                location = f"  File: {f.file_path}"
+                if f.line_number:
+                    location += f":{f.line_number}"
 
+            finding_text = Text()
+            finding_text.append(f"{f.policy_id}", style=f"bold {color}")
+            finding_text.append(f" \u2502 {f.title}\n", style="bold")
+            finding_text.append(f"  {f.message}\n", style="white")
+            if location:
+                finding_text.append(f"{location}\n", style="dim")
+
+            if f.code_snippet:
+                finding_text.append(f"  Found: ", style="dim")
+                finding_text.append(f"{f.code_snippet}\n", style="dim italic")
+
+            console.print(finding_text, end="")
+
+            if details:
+                if f.impact:
+                    console.print(f"  [bold]Impact:[/bold] {f.impact}")
+                if f.attack_scenario:
+                    console.print(f"  [dim italic]Attack: {f.attack_scenario}[/dim italic]")
+                effort_str = f.remediation_effort or "unknown"
+                refs_str = ", ".join(f.references) if f.references else "none"
+                console.print(f"  [dim]Fix effort: {effort_str} \u2502 Refs: {refs_str}[/dim]")
                 console.print()
 
-        # ---- Summary ----
-        counts = _severity_counts(findings)
+            if f.fix_snippet:
+                console.print(f"  [bold green]Fix:[/bold green]")
+                console.print(Syntax(
+                    f.fix_snippet,
+                    "python",
+                    theme="monokai",
+                    line_numbers=False,
+                    padding=1,
+                ))
 
-        summary_parts = []
-        for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-            if counts[sev] > 0:
-                color = _SEVERITY_COLORS[sev]
-                summary_parts.append(f"[{color}]{counts[sev]} {sev.lower()}[/{color}]")
+            console.print()
 
-        if summary_parts:
-            console.print(f"\U0001f4c8 Summary: " + " \u2502 ".join(summary_parts))
-        else:
-            console.print("\u2705 [green]No findings! Your project has excellent governance.[/green]")
+    # ---- Summary ----
+    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    for f in findings:
+        if f.severity in counts:
+            counts[f.severity] += 1
 
-        # Improvement hint
-        if score < 80 and counts["CRITICAL"] > 0:
-            potential = min(100, score + counts["CRITICAL"] * 15)
-            console.print(
-                f"   Fix the {counts['CRITICAL']} critical issue"
-                f"{'s' if counts['CRITICAL'] != 1 else ''}"
-                f" to improve your score to ~{potential}"
-            )
+    summary_parts = []
+    for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+        if counts[sev] > 0:
+            color = _SEVERITY_COLORS[sev]
+            summary_parts.append(f"[{color}]{counts[sev]} {sev.lower()}[/{color}]")
+
+    if summary_parts:
+        console.print(f"\U0001f4c8 Summary: " + " \u2502 ".join(summary_parts))
+    else:
+        console.print("\u2705 [green]No findings! Your project has excellent governance.[/green]")
+
+    if baselined_count > 0 or resolved_count > 0:
+        parts = []
+        if baselined_count > 0:
+            parts.append(f"{baselined_count} baselined")
+        if resolved_count > 0:
+            parts.append(f"[green]{resolved_count} resolved[/green]")
+        sep = " \u2502 "
+        console.print(f"   Baseline: {sep.join(parts)} (use --show-all to see all)")
+
+    # Improvement hint
+    if score < 80 and counts["CRITICAL"] > 0:
+        potential = min(100, score + counts["CRITICAL"] * 15)
+        console.print(f"   Fix the {counts['CRITICAL']} critical issue{'s' if counts['CRITICAL'] != 1 else ''} to reach score {potential}+")
 
     console.print()
+
+    # ---- Related Advisories ----
+    if matched_advisories:
+        adv_table = Table(
+            title="\U0001f6e1\ufe0f  RELATED ADVISORIES (DRAKO-ABSS)",
+            box=box.SIMPLE,
+            show_header=True,
+            header_style="bold",
+            title_style="bold",
+        )
+        adv_table.add_column("Advisory", style="cyan", width=24)
+        adv_table.add_column("Title", style="white")
+        adv_table.add_column("Rules", style="dim", width=20)
+
+        shown: set[str] = set()
+        for _rule_id, advs in matched_advisories.items():
+            for adv in advs:
+                if adv.id in shown:
+                    continue
+                shown.add(adv.id)
+                rules_str = ", ".join(adv.drako_rules[:4])
+                if len(adv.drako_rules) > 4:
+                    rules_str += f" +{len(adv.drako_rules) - 4}"
+                adv_table.add_row(adv.id, adv.title, rules_str)
+
+        console.print(adv_table)
+        console.print()
 
     # ---- CTA ----
     console.print(
-        "\U0001f4a1 [bold]Next steps:[/bold]"
+        "\U0001f4a1 [bold]Improve your score:[/bold]"
     )
     console.print(
-        "   [cyan]drako fix --dry-run[/cyan]  "
-        "# Preview auto-fixes for your findings"
+        "   [cyan]pip install drako[/cyan]"
     )
     console.print(
-        "   [cyan]drako init[/cyan]           "
-        "# Connect to Drako for runtime governance"
+        "   [cyan]drako init[/cyan]   # Add governance middleware to your project"
     )
     console.print()
-    console.print(
-        "   [dim]Unlock runtime DLP, Trust Score, Circuit Breaker, and cryptographic audit trails.[/dim]"
-    )
-    console.print(
-        "   [dim]\u2192 [bold white]https://useagentmesh.com/upgrade[/bold white][/dim]"
-    )
-    console.print()
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-def render_report(
-    bom: AgentBOM,
-    findings: list[Finding],
-    score: int,
-    grade: str,
-    metadata: ProjectMetadata,
-    scan_duration_ms: int,
-    console: Console | None = None,
-    details: bool = False,
-) -> None:
-    """Render the scan report to the terminal.
-
-    If *console* is None a new Console writing to stderr is created.
-    Pass a ``Console(file=StringIO())`` for testing.
-
-    When *details* is False (default), renders a compact summary.
-    When *details* is True, renders the full report with code snippets.
-    """
-    if console is None:
-        console = Console(stderr=True)
-
-    if details:
-        _render_detailed_report(bom, findings, score, grade, metadata, scan_duration_ms, console)
-    else:
-        _render_compact_report(bom, findings, score, grade, metadata, scan_duration_ms, console)
 
 
 def render_report_to_string(
@@ -474,9 +329,123 @@ def render_report_to_string(
     metadata: ProjectMetadata,
     scan_duration_ms: int,
     details: bool = False,
+    baselined_count: int = 0,
+    resolved_count: int = 0,
+    determinism_score: int | None = None,
+    determinism_grade: str | None = None,
+    matched_advisories: dict | None = None,
+    reachability: list | None = None,
 ) -> str:
     """Render the report to a string (for testing)."""
     buf = StringIO()
     console = Console(file=buf, force_terminal=True, width=100)
-    render_report(bom, findings, score, grade, metadata, scan_duration_ms, console=console, details=details)
+    render_report(
+        bom, findings, score, grade, metadata, scan_duration_ms,
+        console=console, details=details,
+        baselined_count=baselined_count, resolved_count=resolved_count,
+        determinism_score=determinism_score, determinism_grade=determinism_grade,
+        matched_advisories=matched_advisories, reachability=reachability,
+    )
+    return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Benchmark panel
+# ---------------------------------------------------------------------------
+
+def render_benchmark_panel(
+    benchmark: BenchmarkResult,
+    score: int,
+    grade: str,
+    console: Console | None = None,
+) -> None:
+    """Render a benchmark comparison panel after the scan report.
+
+    Shows how the project's score compares to the benchmark dataset.
+    """
+    if console is None:
+        console = Console(stderr=True)
+
+    if not benchmark.score_distribution:
+        console.print("[dim]Benchmark data unavailable.[/dim]")
+        return
+
+    grade_color = _GRADE_COLORS.get(grade, "white")
+
+    lines = Text()
+
+    # ---- Score line ----
+    lines.append("Your score: ", style="bold")
+    lines.append(f"{score}/100 ", style=f"bold {grade_color}")
+    lines.append(f"[{grade}]\n", style=f"bold {grade_color}")
+
+    # ---- Percentile ----
+    lines.append(
+        f"Better than {benchmark.percentile}% of "
+        f"{benchmark.projects_in_benchmark} scanned AI agent projects\n",
+    )
+
+    # ---- Framework comparison ----
+    if benchmark.framework and benchmark.framework_percentile is not None:
+        fw_display = benchmark.framework.replace("_", " ").title()
+        fw_count = benchmark.framework_count or "?"
+        top_pct = 100 - benchmark.framework_percentile
+        lines.append(f"\nvs. {fw_display} projects ({fw_count} scanned): ", style="dim")
+        lines.append(f" Top {top_pct}%\n", style="bold")
+
+    top_all = 100 - benchmark.percentile
+    lines.append("vs. all projects: ", style="dim")
+    lines.append(f"                  Top {top_all}%\n", style="bold")
+
+    # ---- Score distribution histogram ----
+    lines.append("\n")
+    buckets = [0] * 10  # 0-9, 10-19, ..., 90-100
+    for s in benchmark.score_distribution:
+        idx = min(s // 10, 9)
+        buckets[idx] += 1
+
+    user_bucket = min(score // 10, 9)
+    bar_chars = []
+    for i, count in enumerate(buckets):
+        width = max(1, count // 2)  # scale down for display
+        if i == user_bucket:
+            bar_chars.append("\u2588" * width)  # filled block = user's bucket
+        else:
+            bar_chars.append("\u2591" * width)  # light shade = other buckets
+
+    bar_line = "".join(bar_chars)
+    lines.append(bar_line)
+    lines.append(" \u2190 you are here\n", style="dim italic")
+
+    # ---- Grade distribution ----
+    lines.append("\nGrade distribution:\n", style="bold")
+    total = sum(benchmark.grade_distribution.values()) or 1
+    for g in ("F", "D", "C", "B", "A"):
+        count = benchmark.grade_distribution.get(g, 0)
+        pct = round(count / total * 100)
+        bar_width = max(1, pct // 2)
+        bar = "\u2588" * bar_width
+        g_color = _GRADE_COLORS.get(g, "white")
+        style = f"bold {g_color}" if g == grade else g_color
+        lines.append(f"{g}: ", style=style)
+        lines.append(f"{bar} {pct}%\n", style=style)
+
+    console.print(Panel(
+        lines,
+        title="[bold cyan]Benchmark Comparison[/bold cyan]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+    console.print()
+
+
+def render_benchmark_panel_to_string(
+    benchmark: BenchmarkResult,
+    score: int,
+    grade: str,
+) -> str:
+    """Render the benchmark panel to a string (for testing)."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=100)
+    render_benchmark_panel(benchmark, score, grade, console=console)
     return buf.getvalue()

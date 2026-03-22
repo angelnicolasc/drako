@@ -53,6 +53,10 @@ class COM001(BasePolicy):
     category = "Compliance"
     severity = "HIGH"
     title = "No automatic logging (EU AI Act Art. 12)"
+    impact = "Non-compliance with EU AI Act Art. 12 logging requirements exposes the organization to regulatory fines up to 3% of revenue."
+    attack_scenario = "Regulator audits your AI system. Without automatic logging, you cannot demonstrate compliance. Fine: up to \u20ac15M or 3% revenue."
+    references = ["https://artificialintelligenceact.eu/article/12/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         all_content = "\n".join(
@@ -60,11 +64,7 @@ class COM001(BasePolicy):
         )
 
         if not _content_has_pattern(all_content, _LOGGING_PATTERNS):
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message="EU AI Act Article 12 requires automatic logging of AI system activity. No logging infrastructure detected.",
                 fix_snippet='from drako import with_compliance\n\n# Drako middleware provides EU AI Act compliant\n# audit logging automatically\ncrew = with_compliance(my_crew)\n# All agent actions, decisions, and tool calls are logged',
             )]
@@ -81,6 +81,10 @@ class COM002(BasePolicy):
     category = "Compliance"
     severity = "HIGH"
     title = "No human oversight mechanism (EU AI Act Art. 14)"
+    impact = "EU AI Act Art. 14 mandates human oversight for high-risk AI. Absence exposes the organization to enforcement action."
+    attack_scenario = "AI system makes harmful autonomous decision. Regulator finds no human oversight mechanism existed. Fine: up to \u20ac15M."
+    references = ["https://artificialintelligenceact.eu/article/14/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -91,11 +95,7 @@ class COM002(BasePolicy):
         )
 
         if not _content_has_pattern(all_content, _OVERSIGHT_PATTERNS):
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message="EU AI Act Article 14 requires human oversight measures. No human-in-the-loop mechanism detected.",
                 fix_snippet='# Add human oversight for high-risk AI operations\nfrom drako import with_compliance\n\ncrew = with_compliance(my_crew, config_path=".drako.yaml")\n# Configure HITL policies in .drako.yaml:\n# governance:\n#   require_approval:\n#     - write_file\n#     - send_email\n#     - database_write',
             )]
@@ -112,6 +112,10 @@ class COM003(BasePolicy):
     category = "Compliance"
     severity = "MEDIUM"
     title = "No technical documentation (EU AI Act Art. 11)"
+    impact = "Missing technical documentation violates EU AI Act Art. 11, preventing conformity assessment and market access."
+    attack_scenario = "Organization seeks CE marking for AI system. Conformity assessment fails because no technical documentation exists."
+    references = ["https://artificialintelligenceact.eu/article/11/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         root = metadata.root
@@ -148,11 +152,7 @@ class COM003(BasePolicy):
                         pass
 
         if not has_docs:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message="EU AI Act Article 11 requires technical documentation. No docs/ directory or comprehensive README found.",
                 fix_snippet="# Create technical documentation for your AI system\n# Required by EU AI Act Art. 11:\n# - System architecture and design\n# - Agent capabilities and limitations\n# - Data used for training/prompting\n# - Risk assessment results\n# - Human oversight procedures\n\n# Create docs/ directory with at minimum:\nmkdir -p docs\n# docs/architecture.md  - System design\n# docs/agents.md        - Agent inventory & capabilities\n# docs/risk-assessment.md - Risk analysis",
             )]
@@ -169,6 +169,10 @@ class COM004(BasePolicy):
     category = "Compliance"
     severity = "MEDIUM"
     title = "No risk management documentation (EU AI Act Art. 9)"
+    impact = "Absence of risk management documentation blocks EU AI Act conformity and leaves risks unidentified and unmitigated."
+    attack_scenario = "AI agent causes harm via an unidentified risk. Investigation reveals no risk assessment was ever conducted."
+    references = ["https://artificialintelligenceact.eu/article/9/"]
+    remediation_effort = "significant"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         root = metadata.root
@@ -190,11 +194,7 @@ class COM004(BasePolicy):
             has_risk_docs = any(p in all_content.lower() for p in risk_patterns)
 
         if not has_risk_docs:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message="EU AI Act Article 9 requires a risk management system. No risk assessment documentation found.",
                 fix_snippet="# Create a risk assessment document\n# EU AI Act Art. 9 requires:\n# - Identification of known and foreseeable risks\n# - Risk estimation and evaluation\n# - Risk mitigation measures\n# - Residual risk evaluation\n\n# Create RISK_ASSESSMENT.md with:\n# 1. Agent risk inventory\n# 2. Tool access risks (filesystem, network, etc.)\n# 3. Data handling risks\n# 4. Mitigation strategies",
             )]
@@ -211,6 +211,10 @@ class COM005(BasePolicy):
     category = "Compliance"
     severity = "MEDIUM"
     title = "No Agent BOM / inventory maintained"
+    impact = "Without a component inventory, you cannot track which AI models, tools, and permissions your agents use."
+    attack_scenario = "Security vulnerability found in a model library. Without BOM, team cannot determine which agents are affected."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         root = metadata.root
@@ -226,11 +230,7 @@ class COM005(BasePolicy):
         has_bom = any(indicator.exists() for indicator in bom_indicators)
 
         if not has_bom:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message="No Agent Bill of Materials (BOM) maintained. An inventory of AI components is essential for governance.",
                 fix_snippet='# Initialize Drako to maintain an Agent BOM\npip install drako\ndrako init\n\n# This creates .drako.yaml with:\n# - Agent inventory\n# - Tool registry\n# - Model usage tracking\n# - Governance policies',
             )]
@@ -247,6 +247,10 @@ class COM006(BasePolicy):
     category = "Compliance"
     severity = "CRITICAL"
     title = "No HITL checkpoint for high-risk actions"
+    impact = "High-risk tools executing without human checkpoints violate EU AI Act Art. 14 and create liability for autonomous harm."
+    attack_scenario = "Agent autonomously executes a destructive database operation. EU regulator determines no human oversight was configured."
+    references = ["https://artificialintelligenceact.eu/article/14/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Only relevant if agents have tools with side-effects
@@ -270,11 +274,7 @@ class COM006(BasePolicy):
             return []
 
         tool_names = ", ".join(t.name for t in side_effect_tools[:5])
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"EU AI Act Article 14 requires human oversight for high-risk AI actions. "
                 f"Tools with side-effects detected ({tool_names}) but no HITL checkpoint configured. "

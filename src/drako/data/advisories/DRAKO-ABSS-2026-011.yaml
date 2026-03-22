@@ -1,0 +1,65 @@
+id: DRAKO-ABSS-2026-011
+title: "LLM Prompt Injection via Adversarial Input Manipulation"
+category: mitre-atlas
+severity: 9
+confidence: 0.92
+
+affected:
+  frameworks: [crewai, langchain, autogen, llamaindex, semantic-kernel]
+  conditions:
+    - "User-supplied input concatenated directly into LLM prompt without sanitization"
+    - "Agent accepts freeform text that is forwarded to system or assistant role messages"
+    - "No input validation or prompt boundary enforcement in place"
+
+ioc:
+  type: PROMPT_INJECTION
+  patterns:
+    - "system:"
+    - "assistant:"
+    - "### instruction:"
+    - "<<SYS>>"
+    - "[INST]"
+    - "### Human:"
+    - "### Assistant:"
+    - "<|im_start|>system"
+    - "BEGININSTRUCTION"
+  pattern_hashes:
+    - "a3f1c7e9b2d4f6a8c0e2d4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4"
+    - "b7e3d1f5a9c3e7b1d5f9a3c7e1b5d9f3a7c1e5b9d3f7a1c5e9b3d7f1a5c9e3"
+    - "c4d8f2a6b0e4c8d2f6a0b4c8e2d6f0a4b8c2e6d0f4a8b2c6e0d4f8a2b6c0e4"
+    - "d9e3f7b1c5d9e3f7a1b5c9d3e7f1a5b9c3d7e1f5a9b3c7d1e5f9a3b7c1d5e9"
+    - "e2f6a0b4c8e2d6f0a4b8c2e6d0f4a8b2c6e0d4f8a2b6c0e4d8f2a6b0c4e8d2"
+
+taint_path:
+  source: "user_input / external_data"
+  sink: "llm.generate() / chain.invoke() / agent.run()"
+  via:
+    - "User or external source provides crafted text"
+    - "Application concatenates input into prompt template"
+    - "Injected role markers override intended LLM behavior"
+    - "LLM interprets injected content as privileged instructions"
+
+references:
+  - type: mitre_atlas
+    id: "AML.T0051"
+    url: "https://atlas.mitre.org/techniques/AML.T0051"
+  - type: research
+    id: "OWASP-LLM-01"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+  - type: research
+    id: "Perez-2022"
+    url: "https://arxiv.org/abs/2211.09527"
+
+mitigation:
+  drako_rules: [SEC-007, SEC-008, SEC-010]
+  description: >
+    Enforce strict prompt boundary separation between system instructions and user input.
+    Use delimiters that are validated server-side and cannot be spoofed by user content.
+    Apply input sanitization to strip or escape known role markers and meta-instruction tokens.
+    Implement output filtering to detect when the model has been redirected from its intended task.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

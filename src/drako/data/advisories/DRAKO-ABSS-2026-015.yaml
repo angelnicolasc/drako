@@ -1,0 +1,68 @@
+id: DRAKO-ABSS-2026-015
+title: "Data Poisoning via Unvalidated Agent Feedback Loops"
+category: mitre-atlas
+severity: 7
+confidence: 0.80
+
+affected:
+  frameworks: [crewai, langchain, autogen, llamaindex]
+  conditions:
+    - "Agent output is stored and later used as training data or few-shot examples"
+    - "No human-in-the-loop validation before feedback is incorporated"
+    - "Retrieval-augmented generation (RAG) indexes agent-generated content without provenance tracking"
+    - "Memory or knowledge base is writable by agent actions without access controls"
+
+ioc:
+  type: DATA_POISONING
+  patterns:
+    - "self_referential_training_loop"
+    - "unvalidated_memory_write"
+    - "rag_index_injection"
+    - "feedback_without_provenance"
+    - "auto_finetuning_on_outputs"
+    - "knowledge_base_overwrite"
+  pattern_hashes:
+    - "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+    - "b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3"
+    - "c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6"
+    - "d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9"
+    - "e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2"
+    - "f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5"
+
+taint_path:
+  source: "agent_output / llm_response"
+  sink: "training_data_store / rag_index / memory_backend"
+  via:
+    - "Agent generates output that contains subtly manipulated facts or instructions"
+    - "Output is stored in vector database, knowledge base, or fine-tuning dataset"
+    - "No provenance tracking distinguishes human-verified data from agent-generated content"
+    - "Poisoned data is retrieved in future queries, amplifying the corruption"
+    - "Feedback loop causes progressive model degradation or behavioral drift"
+
+references:
+  - type: mitre_atlas
+    id: "AML.T0048"
+    url: "https://atlas.mitre.org/techniques/AML.T0048"
+  - type: research
+    id: "Shumailov-2023-Model-Collapse"
+    url: "https://arxiv.org/abs/2305.17493"
+  - type: research
+    id: "OWASP-LLM-03"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+mitigation:
+  drako_rules: [GOV-001, COM-003]
+  description: >
+    Never feed agent outputs directly into training pipelines without human review.
+    Implement provenance tracking that distinguishes human-authored content from
+    agent-generated content in all knowledge stores. Apply write access controls
+    to RAG indexes and memory backends so agents cannot modify their own context
+    unilaterally. Use anomaly detection on knowledge base updates to flag unexpected
+    content drift. Maintain immutable snapshots of training data for rollback
+    capability.
+  remediation_effort: significant
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

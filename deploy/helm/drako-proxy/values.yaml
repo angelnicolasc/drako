@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: useagentmesh/proxy
+  repository: drako/proxy
   tag: "2.0.0"
   pullPolicy: IfNotPresent
 
@@ -20,7 +20,7 @@ config:
   # Key name within the existing secret
   existingSecretKey: "DRAKO_API_KEY"
   # Drako platform endpoint
-  endpoint: "https://api.useagentmesh.com"
+  endpoint: "https://api.getdrako.com"
   # Governance level: autopilot | balanced | strict | custom
   governanceLevel: "autopilot"
 

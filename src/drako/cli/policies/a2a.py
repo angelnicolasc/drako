@@ -33,6 +33,10 @@ class A2A001(BasePolicy):
     category = "Security"
     severity = "HIGH"
     title = "No agent-to-agent authentication configured"
+    impact = "Unauthenticated agent-to-agent communication lets a compromised agent impersonate others and inject malicious tasks."
+    attack_scenario = "Attacker compromises one agent and sends forged delegation requests to all others, executing a prompt worm attack."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "significant"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Only relevant for multi-agent projects
@@ -49,11 +53,7 @@ class A2A001(BasePolicy):
             return []
 
         agent_names = ", ".join(a.name for a in bom.agents[:5])
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"Multi-agent project with {len(bom.agents)} agents "
                 f"({agent_names}) communicating without mutual authentication. "
@@ -100,6 +100,10 @@ class A2A002(BasePolicy):
     category = "Security"
     severity = "CRITICAL"
     title = "Agent accepts unvalidated input from other agents"
+    impact = "Treating other agents' output as trusted input enables prompt worm propagation across the entire agent fleet."
+    attack_scenario = "Agent A is prompt-injected. Its output containing injection payload is passed unvalidated to Agent B, which executes it."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if len(bom.agents) < 2:
@@ -118,11 +122,7 @@ class A2A002(BasePolicy):
                 continue
 
             # Found inter-agent data flow without validation
-            findings.append(Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            findings.append(self._finding(
                 message=(
                     f"Inter-agent data flow detected in {rel_path} without "
                     f"input validation or injection scanning. Other agents' "
@@ -167,6 +167,10 @@ class A2A003(BasePolicy):
     category = "Security"
     severity = "HIGH"
     title = "No isolation between agent communication channels"
+    impact = "Shared state between agents lets a compromised agent read or poison other agents' context and instructions."
+    attack_scenario = "Compromised agent writes malicious instructions to shared_memory. Other agents read and execute them as legitimate."
+    references = ["https://cwe.mitre.org/data/definitions/668.html"]
+    remediation_effort = "significant"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if len(bom.agents) < 2:
@@ -184,11 +188,7 @@ class A2A003(BasePolicy):
         if _ISOLATION_PATTERNS.search(combined):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 "Agents share context or state without channel isolation. "
                 "If one agent is compromised, it can read or modify other "

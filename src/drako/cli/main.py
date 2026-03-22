@@ -24,9 +24,14 @@ def _register_commands() -> None:
     from drako.cli.history_command import history
     from drako.cli.diff_command import diff
     from drako.cli.rollback_command import rollback
+    from drako.cli.fix_command import fix
+    from drako.cli.validate_command import validate
+    from drako.cli.simulate_command import simulate
     from drako.cli.upgrade_command import upgrade
     from drako.cli.templates_command import templates
     from drako.cli.proxy_command import proxy
+    from drako.cli.bom_command import bom
+    from drako.cli.baseline_command import baseline
 
     cli.add_command(init)
     cli.add_command(scan)
@@ -37,9 +42,14 @@ def _register_commands() -> None:
     cli.add_command(history)
     cli.add_command(diff)
     cli.add_command(rollback)
+    cli.add_command(fix)
+    cli.add_command(validate)
+    cli.add_command(simulate)
     cli.add_command(upgrade)
     cli.add_command(templates)
     cli.add_command(proxy)
+    cli.add_command(bom)
+    cli.add_command(baseline)
 
 
 _register_commands()

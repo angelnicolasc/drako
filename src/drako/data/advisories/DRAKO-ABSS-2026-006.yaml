@@ -1,0 +1,65 @@
+id: DRAKO-ABSS-2026-006
+title: "Sensitive Information Disclosure via LLM Context Leakage"
+category: owasp-llm
+severity: 9
+confidence: 0.94
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "API keys or credentials are embedded in system prompts or agent configurations"
+    - "PII is included in LLM context without redaction"
+    - "Agent memory or conversation history contains sensitive data accessible to other users"
+    - "RAG retrieval surfaces confidential documents without access control filtering"
+
+ioc:
+  type: DATA_LEAKAGE
+  patterns:
+    - "api_key="
+    - "password="
+    - "ssn:"
+    - "credit_card:"
+    - "Authorization: Bearer"
+  pattern_hashes:
+    - "14ef8ebda1d2b6fdd856faeaa9fd9dedf960d53c98e35d52944980e8789446b3"
+    - "a184fed6cfdd97ed2f26ab97ac6d70e76ba6c6fdab5a1df9a557aca8cb971645"
+    - "6701c27e2ad33aaf760bc8a033309364d0152a71f5d94c0725178daad915d6f9"
+    - "668846971221cf3efdbbec50f1f7d5229d028fc7124328b78e44416b739ae162"
+    - "5959486647b85732f6dc8e3f84a28886e83b80dc065abadedae9853eb5562edd"
+
+taint_path:
+  source: "sensitive_data_store"
+  sink: "llm_output"
+  via: ["prompt_context", "rag_retrieval", "agent_memory"]
+
+references:
+  - type: owasp
+    id: "LLM06:2025"
+    url: "https://genai.owasp.org/llmrisk/llm06-sensitive-information-disclosure/"
+  - type: mitre_atlas
+    id: "AML.T0024"
+    url: "https://atlas.mitre.org/techniques/AML.T0024"
+  - type: mitre_atlas
+    id: "AML.T0044"
+    url: "https://atlas.mitre.org/techniques/AML.T0044"
+  - type: cwe
+    id: "CWE-200"
+    url: "https://cwe.mitre.org/data/definitions/200.html"
+
+mitigation:
+  drako_rules: [SEC-001, COM-001, COM-002]
+  description: >
+    Never embed secrets, API keys, or credentials directly in prompts or agent
+    configurations. Use secret management systems (e.g., HashiCorp Vault, AWS
+    Secrets Manager) with runtime injection. Apply PII detection and redaction
+    (using tools like Microsoft Presidio) on all inputs before they enter the
+    LLM context. Implement access control filtering on RAG retrieval to ensure
+    users only see documents they are authorized to access. Isolate agent memory
+    per user session and apply data retention policies. Monitor LLM outputs for
+    accidental credential or PII leakage using DLP scanning.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

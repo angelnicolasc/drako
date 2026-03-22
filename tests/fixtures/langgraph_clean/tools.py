@@ -23,7 +23,6 @@ def validate_url(url: str) -> str:
     return url
 
 
-# ok: SEC-003
 def read_data(path: str) -> str:
     """Read data with path validation and type hints."""
     validated = validate_path(path)
@@ -31,8 +30,6 @@ def read_data(path: str) -> str:
         return f.read()
 
 
-# ok: SEC-004
-# ok: BP-004
 async def fetch_api(url: str, timeout: int = 30) -> str:
     """Fetch API with domain validation and timeout."""
     validated = validate_url(url)

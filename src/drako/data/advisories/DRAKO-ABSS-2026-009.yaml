@@ -1,0 +1,61 @@
+id: DRAKO-ABSS-2026-009
+title: "Overreliance on LLM Output Without Verification or Fact-Checking"
+category: owasp-llm
+severity: 5
+confidence: 0.85
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent output is used for decision-making without validation against ground truth"
+    - "No fact-checking or cross-referencing mechanism exists in the pipeline"
+    - "LLM-generated code is executed without review or static analysis"
+    - "Critical business decisions are automated based solely on LLM responses"
+
+ioc:
+  type: OVERRELIANCE
+  patterns:
+    - "output_validation: none"
+    - "fact_check: disabled"
+    - "trust_llm_output: true"
+    - "verify_response: false"
+  pattern_hashes:
+    - "cd7074c083bbeb8345f141332f82692870ee8837e88bba118f20c2dba1f565e7"
+    - "277275db8e14e1d89a420fc4d5bb90e6880cd6b1f2c7d00411ee2a786bd89fd4"
+    - "416c69627318213921b994567f0ab78c288b32e181e77c09e62bc3396f202c52"
+    - "0df75afeb911c071954f8d0c6683ceb2b7a31411cd02b13936cd641e74d478f4"
+
+taint_path:
+  source: "llm_generated_output"
+  sink: "business_decision_or_action"
+  via: ["unchecked_acceptance", "missing_validation_layer"]
+
+references:
+  - type: owasp
+    id: "LLM09:2025"
+    url: "https://genai.owasp.org/llmrisk/llm09-overreliance/"
+  - type: mitre_atlas
+    id: "AML.T0048"
+    url: "https://atlas.mitre.org/techniques/AML.T0048"
+  - type: research
+    id: "ARXIV-2309.01219"
+    url: "https://arxiv.org/abs/2309.01219"
+
+mitigation:
+  drako_rules: [GOV-001, BP-001]
+  description: >
+    Implement output validation layers that cross-reference LLM responses
+    against authoritative data sources before acting on them. For code
+    generation, apply static analysis, linting, and sandboxed test execution
+    before deployment. Establish confidence thresholds below which human review
+    is mandatory. Use multi-model consensus (querying multiple LLMs and
+    comparing outputs) for high-stakes decisions. Add disclaimers and
+    confidence scores to user-facing LLM outputs. Design systems to degrade
+    gracefully when LLM output quality drops, rather than propagating errors
+    through the pipeline.
+  remediation_effort: low
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

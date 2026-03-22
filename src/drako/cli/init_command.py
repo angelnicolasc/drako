@@ -201,7 +201,7 @@ def _generate_autopilot_yaml(
         # Everything is in audit mode - logging, not blocking.
         #
         # Ready for more control? Edit any section below or see:
-        # https://docs.useagentmesh.com/config
+        # https://docs.getdrako.com/config
         #
         # Switch to manual mode:
         #   drako init --manual
@@ -235,7 +235,7 @@ def _generate_manual_yaml(
     header = textwrap.dedent(f"""\
         # Drako Configuration
         # Generated from scan of: {project_name} ({fw_label})
-        # Docs: https://docs.useagentmesh.com/config
+        # Docs: https://docs.getdrako.com/config
 
         version: "1.0"
         governance_level: custom
@@ -436,7 +436,7 @@ def _apply_strict_overrides(config: dict) -> dict:
     type=click.Choice(["crewai", "langgraph", "autogen", "generic"], case_sensitive=False),
     help="Override framework auto-detection",
 )
-@click.option("--endpoint", default="https://api.useagentmesh.com", help="Custom endpoint")
+@click.option("--endpoint", default="https://api.getdrako.com", help="Custom endpoint")
 @click.option("--autopilot", "mode", flag_value="autopilot", help="Smart defaults from scan (default)")
 @click.option("--balanced", "mode", flag_value="balanced", help="Enforcement active with escape hatches")
 @click.option("--strict", "mode", flag_value="strict", help="Maximum governance for enterprise")
@@ -515,7 +515,7 @@ def init(api_key: str | None, framework: str | None, endpoint: str,
             api_key = env_key
             click.echo(click.style("  [auth]   ", fg="green") + "Using API key from DRAKO_API_KEY env var")
         else:
-            click.echo("  Get a free API key at: " + click.style("https://app.useagentmesh.com/signup", fg="cyan", underline=True))
+            click.echo("  Get a free API key at: " + click.style("https://app.getdrako.com/signup", fg="cyan", underline=True))
             api_key = click.prompt("  Enter your API key", hide_input=False)
 
     # ---- Step 4: validate API key ----
@@ -530,7 +530,7 @@ def init(api_key: str | None, framework: str | None, endpoint: str,
                 headers={"Authorization": f"Bearer {api_key}"},
             )
         if resp.status_code == 401:
-            click.secho("  [error]  Invalid API key. Get one at https://app.useagentmesh.com/signup", fg="red")
+            click.secho("  [error]  Invalid API key. Get one at https://app.getdrako.com/signup", fg="red")
             raise SystemExit(1)
         if resp.status_code >= 400:
             click.secho(f"  [warn]   Could not validate key (HTTP {resp.status_code}). Continuing anyway.", fg="yellow")
@@ -677,3 +677,19 @@ def init(api_key: str | None, framework: str | None, endpoint: str,
         click.echo("  3. Run: " + click.style("drako upgrade", fg="cyan") + "     When ready for enforcement")
     click.echo("     Run: " + click.style("drako init --manual", fg="cyan") + "  Full control over every setting")
     click.echo()
+
+    # ---- Step 10: telemetry opt-in prompt ----
+    try:
+        from drako.telemetry import is_telemetry_enabled, enable_telemetry
+
+        if not is_telemetry_enabled():
+            click.echo("  Drako collects anonymous usage stats to improve the product.")
+            click.echo("  No PII is ever sent. Disable anytime: " + click.style("drako config set telemetry.enabled false", fg="cyan"))
+            if click.confirm("  Enable anonymous telemetry?", default=True):
+                enable_telemetry(".")
+                click.echo(click.style("  [ok] ", fg="green") + "Telemetry enabled. Thank you!")
+            else:
+                click.echo(click.style("  [ok] ", fg="green") + "Telemetry disabled. No data will be sent.")
+            click.echo()
+    except Exception:
+        pass  # Telemetry prompt must never fail init

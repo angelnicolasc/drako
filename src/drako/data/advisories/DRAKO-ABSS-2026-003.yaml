@@ -1,0 +1,62 @@
+id: DRAKO-ABSS-2026-003
+title: "Training Data Poisoning via Unvalidated Fine-Tuning Pipelines"
+category: owasp-llm
+severity: 7
+confidence: 0.88
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Fine-tuning datasets include user-generated or web-scraped content without validation"
+    - "Training pipelines accept data from untrusted external sources"
+    - "No data provenance tracking or integrity verification for training corpora"
+    - "RAG knowledge bases are populated from unmoderated community sources"
+
+ioc:
+  type: DATA_POISONING
+  patterns:
+    - "fine_tune(untrusted_dataset)"
+    - "training_data.append(user_generated)"
+    - "model.fit(unvalidated_corpus)"
+    - "load_training(external_url)"
+  pattern_hashes:
+    - "c17b68adb4983ce7360b26361b9a292795c0392abcc563ed3475e8df01c61956"
+    - "d7266b81b713848a058798789424ff5c8b2432a7a32b3a8701eb8aa1aca26c0a"
+    - "d6f4a0c5475ae6c5a47d7642039c9405f3d9c1f8627195f544995fde5eea2c09"
+    - "d678dc1effb01d4300d9a1d5c30e5f97eb29c1d33f950583a75bac68aced8939"
+
+taint_path:
+  source: "external_training_data"
+  sink: "model_weights"
+  via: ["data_ingestion_pipeline", "fine_tuning_job"]
+
+references:
+  - type: owasp
+    id: "LLM03:2025"
+    url: "https://genai.owasp.org/llmrisk/llm03-training-data-poisoning/"
+  - type: mitre_atlas
+    id: "AML.T0020"
+    url: "https://atlas.mitre.org/techniques/AML.T0020"
+  - type: mitre_atlas
+    id: "AML.T0019"
+    url: "https://atlas.mitre.org/techniques/AML.T0019"
+  - type: research
+    id: "ARXIV-2401.05566"
+    url: "https://arxiv.org/abs/2401.05566"
+
+mitigation:
+  drako_rules: [GOV-001, COM-003]
+  description: >
+    Establish strict data provenance and integrity verification for all training
+    and fine-tuning datasets. Implement data validation pipelines that check for
+    adversarial samples, statistical anomalies, and known poisoning patterns.
+    Use cryptographic hashing to verify dataset integrity across the supply
+    chain. Apply differential privacy techniques during training to limit the
+    influence of individual samples. Maintain audit logs of all data sources
+    and transformations applied during the training pipeline.
+  remediation_effort: significant
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

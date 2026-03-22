@@ -1,0 +1,66 @@
+id: DRAKO-ABSS-2026-008
+title: "Excessive Agency via Unrestricted Tool Access and Autonomous Execution"
+category: owasp-llm
+severity: 9
+confidence: 0.94
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent has simultaneous access to filesystem, network, and code execution tools"
+    - "No human-in-the-loop approval required for high-impact actions"
+    - "Tool permissions use wildcard grants instead of explicit allowlists"
+    - "Agent can autonomously chain destructive operations without confirmation"
+
+ioc:
+  type: EXCESSIVE_AGENCY
+  patterns:
+    - "filesystem+network+code_execution"
+    - "tool_permissions: [\"*\"]"
+    - "human_in_the_loop: false"
+    - "auto_execute: true"
+    - "approval_required: false"
+  pattern_hashes:
+    - "aadded093d7e7d9cb160522bddf5a96775fcf4e29af47e3aa8c57ff65a749183"
+    - "c200d436767660a1502f4aa8bebe94e5f948bb3985dd9a3db87fa365f8fbe76a"
+    - "d4655c2919cbb123b4607d661650f29ac504395466434482029a7ce170ad47de"
+    - "42173bd7eddc281a0f3ddfa1c40d54ef45ca6633671b30a6b4ea54503e4740d7"
+    - "d14efeaea3dc95fca408bf3e24031a7348cc4dce7647b42f511fdbe82f448799"
+
+taint_path:
+  source: "agent_autonomy_configuration"
+  sink: "unrestricted_system_actions"
+  via: ["tool_orchestration", "unsupervised_execution_loop"]
+
+references:
+  - type: owasp
+    id: "LLM08:2025"
+    url: "https://genai.owasp.org/llmrisk/llm08-excessive-agency/"
+  - type: mitre_atlas
+    id: "AML.T0048"
+    url: "https://atlas.mitre.org/techniques/AML.T0048"
+  - type: cwe
+    id: "CWE-250"
+    url: "https://cwe.mitre.org/data/definitions/250.html"
+  - type: cwe
+    id: "CWE-269"
+    url: "https://cwe.mitre.org/data/definitions/269.html"
+
+mitigation:
+  drako_rules: [GOV-005, GOV-006, SEC-003, SEC-005]
+  description: >
+    Apply the principle of least privilege to all agent tool configurations.
+    Never grant wildcard permissions; explicitly enumerate allowed tools and
+    their permitted operations. Require human-in-the-loop approval for
+    destructive, irreversible, or high-impact actions (file deletion, network
+    requests to external services, code execution). Implement capability
+    separation so that no single agent holds filesystem, network, and execution
+    privileges simultaneously. Use action classification (read-only vs.
+    write vs. destructive) to enforce graduated approval requirements.
+    Deploy kill switches and circuit breakers for autonomous agent loops.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

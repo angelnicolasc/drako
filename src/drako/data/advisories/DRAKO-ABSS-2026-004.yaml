@@ -1,0 +1,62 @@
+id: DRAKO-ABSS-2026-004
+title: "Model Denial of Service via Resource Exhaustion Attacks"
+category: owasp-llm
+severity: 7
+confidence: 0.90
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "No input length validation or token counting before LLM API calls"
+    - "Recursive or self-referencing prompt patterns are not detected"
+    - "Agent loops lack iteration limits or timeout mechanisms"
+    - "Batch processing endpoints accept unbounded request sizes"
+
+ioc:
+  type: RESOURCE_EXHAUSTION
+  patterns:
+    - "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    - "repeat this word forever"
+    - "enumerate all possible combinations of"
+    - "recursively expand the following"
+  pattern_hashes:
+    - "6d1cf22d7cc09b085dfc25ee1a1f3ae0265804c607bc2074ad253bcc82fd81ee"
+    - "261256f0750494e646492ac8ec70726bad9c4083b9d584a03dddce3f5433f581"
+    - "014eabe40ad595319337534273282a42a1c3297ec815678dd1ade14778279354"
+    - "70a86399098a8ab1847f49232c930422dd59cd4659563b9c742fa0fbb874aac5"
+
+taint_path:
+  source: "user_input"
+  sink: "llm_api_resource_pool"
+  via: ["token_expansion", "recursive_prompt_loop"]
+
+references:
+  - type: owasp
+    id: "LLM04:2025"
+    url: "https://genai.owasp.org/llmrisk/llm04-model-denial-of-service/"
+  - type: mitre_atlas
+    id: "AML.T0029"
+    url: "https://atlas.mitre.org/techniques/AML.T0029"
+  - type: cwe
+    id: "CWE-400"
+    url: "https://cwe.mitre.org/data/definitions/400.html"
+  - type: cwe
+    id: "CWE-770"
+    url: "https://cwe.mitre.org/data/definitions/770.html"
+
+mitigation:
+  drako_rules: [MAG-001, MAG-002, GOV-007]
+  description: >
+    Enforce strict input token limits with pre-call token counting using the
+    model's tokenizer. Implement request timeouts at both the application and
+    infrastructure layers. Set maximum iteration counts for agent loops and
+    recursive tool calls. Apply rate limiting per user and per session to
+    prevent resource exhaustion. Monitor token consumption patterns and alert
+    on anomalous spikes. Use circuit breakers to halt runaway agent executions
+    that exceed predefined cost or time thresholds.
+  remediation_effort: low
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

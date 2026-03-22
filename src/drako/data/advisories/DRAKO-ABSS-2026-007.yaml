@@ -1,0 +1,65 @@
+id: DRAKO-ABSS-2026-007
+title: "Insecure Plugin and Tool Design Enabling Arbitrary Code Execution"
+category: owasp-llm
+severity: 8
+confidence: 0.93
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent tools use exec() or eval() with LLM-generated arguments"
+    - "File system access tools lack path traversal protections"
+    - "Tools accept user-controlled input without schema validation"
+    - "Plugin interfaces do not enforce least-privilege permission boundaries"
+
+ioc:
+  type: INSECURE_PLUGIN
+  patterns:
+    - "exec(tool_input)"
+    - "eval(user_request)"
+    - "open(arbitrary_path)"
+    - "os.system(command)"
+    - "subprocess.run(user_input)"
+  pattern_hashes:
+    - "f81c68236229dc013e2a6966a941c0d31133718eabdab99321324c57e1ccb82c"
+    - "b18eea5b6f8c87f895a978b8acc16e600ceaa9dd3503f93a4c517cddc12d6e7c"
+    - "37eb4e18dabf1545d91e9dcd844a99e41bd5bacd707e9427035e15851e6c4c83"
+    - "5e918e39619a2672d0571ce28a5e338f373864eec49a18c90a6396b3aa4fee44"
+    - "a85804483072463198742896a70e2806fec9beaa893f2e3a1b0281fc6a1174aa"
+
+taint_path:
+  source: "llm_generated_arguments"
+  sink: "system_execution_context"
+  via: ["tool_dispatch", "unvalidated_parameter_passing"]
+
+references:
+  - type: owasp
+    id: "LLM07:2025"
+    url: "https://genai.owasp.org/llmrisk/llm07-insecure-plugin-design/"
+  - type: mitre_atlas
+    id: "AML.T0040"
+    url: "https://atlas.mitre.org/techniques/AML.T0040"
+  - type: cwe
+    id: "CWE-78"
+    url: "https://cwe.mitre.org/data/definitions/78.html"
+  - type: cwe
+    id: "CWE-95"
+    url: "https://cwe.mitre.org/data/definitions/95.html"
+
+mitigation:
+  drako_rules: [SEC-003, SEC-005, SEC-006, GOV-002]
+  description: >
+    Eliminate all uses of exec(), eval(), and os.system() in agent tools.
+    Replace with purpose-built functions that accept validated, typed parameters.
+    Implement strict input schemas (JSON Schema or Pydantic models) for all tool
+    interfaces. Apply path canonicalization and jail directories for file system
+    tools. Run tools in sandboxed environments (containers, gVisor, or WASM)
+    with minimal permissions. Enforce the principle of least privilege by
+    granting each tool only the specific capabilities it requires. Implement
+    tool-level audit logging for all invocations.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

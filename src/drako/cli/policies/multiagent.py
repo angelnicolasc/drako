@@ -37,6 +37,10 @@ class MULTI001(BasePolicy):
     category = "Operational"
     severity = "HIGH"
     title = "Multi-agent system without topology monitoring"
+    impact = "Unmonitored multi-agent systems hide cascading failures, conflicts, and circular dependencies until production incidents."
+    attack_scenario = "Two agents write conflicting data to the same resource. Without topology monitoring, the corruption goes undetected."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if len(bom.agents) < 2:
@@ -51,11 +55,7 @@ class MULTI001(BasePolicy):
         if _TOPOLOGY_PATTERNS.search(combined):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"Multi-agent system with {len(bom.agents)} agents has no "
                 f"topology monitoring or observability configured. Cannot "
@@ -92,6 +92,10 @@ class MULTI002(BasePolicy):
     category = "Security"
     severity = "CRITICAL"
     title = "Circular agent dependency detected"
+    impact = "Circular delegation between agents causes infinite loops, resource exhaustion, and amplification of prompt injections."
+    attack_scenario = "Agent A delegates to B, B delegates back to A. The loop amplifies a prompt injection across the entire agent fleet."
+    references = ["https://cwe.mitre.org/data/definitions/835.html"]
+    remediation_effort = "significant"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if len(bom.agents) < 2:
@@ -145,11 +149,7 @@ class MULTI002(BasePolicy):
             if key in seen:
                 continue
             seen.add(key)
-            findings.append(Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            findings.append(self._finding(
                 message=(
                     f"Circular dependency: {'->'.join(cycle)}. "
                     f"This can cause infinite loops, resource exhaustion, "
@@ -178,6 +178,10 @@ class MULTI003(BasePolicy):
     category = "Operational"
     severity = "HIGH"
     title = "Shared resource without contention protection"
+    impact = "Multiple agents writing to shared resources without locking causes data corruption, lost updates, and race conditions."
+    attack_scenario = "Two agents simultaneously update the same database record. Without contention protection, one update silently overwrites the other."
+    references = ["https://cwe.mitre.org/data/definitions/362.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if len(bom.agents) < 2:
@@ -189,18 +193,28 @@ class MULTI003(BasePolicy):
             for tool_name in getattr(agent, "tools", []):
                 tool_to_agents[tool_name].append(agent.name)
 
+        _WRITE_NAME_PATTERNS = {
+            "write", "update", "delete", "create", "insert", "remove",
+            "send", "transfer", "deploy", "execute", "payment", "submit",
+        }
+
         findings = []
         for tool_name, agents in tool_to_agents.items():
             if len(agents) < 2:
                 continue
-            # Check if the tool is write-type
+            # Check if the tool is write-type via capabilities or name heuristics
             tool_obj = next((t for t in bom.tools if t.name == tool_name), None)
-            if tool_obj and getattr(tool_obj, "tool_type", "read") in ("write", "execute", "payment"):
-                findings.append(Finding(
-                    policy_id=self.policy_id,
-                    category=self.category,
-                    severity=self.severity,
-                    title=self.title,
+            is_write = False
+            if tool_obj:
+                is_write = (
+                    getattr(tool_obj, "has_filesystem_access", False)
+                    or getattr(tool_obj, "has_network_access", False)
+                    or getattr(tool_obj, "has_code_execution", False)
+                )
+            if not is_write:
+                is_write = any(pat in tool_name.lower() for pat in _WRITE_NAME_PATTERNS)
+            if is_write:
+                findings.append(self._finding(
                     message=(
                         f"Write tool '{tool_name}' is used by multiple agents: "
                         f"{', '.join(agents)}. Without contention protection, "
@@ -234,6 +248,10 @@ class MULTI004(BasePolicy):
     category = "Operational"
     severity = "MEDIUM"
     title = "No chaos testing configured"
+    impact = "Without chaos testing, governance controls (circuit breakers, fallbacks, HITL) are untested and may fail when needed."
+    attack_scenario = "Circuit breaker is configured but never tested. In production, it fails to trip during an outage, causing cascading failure."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         all_config = "\n".join(metadata.config_files.values())
@@ -245,11 +263,7 @@ class MULTI004(BasePolicy):
         if _CHAOS_PATTERNS.search(combined):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 "No resilience or chaos testing detected. Without chaos "
                 "engineering, you cannot verify that governance controls "

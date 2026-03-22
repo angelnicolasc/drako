@@ -6,10 +6,14 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from drako.benchmark import BenchmarkResult
     from drako.cli.scanner import ScanResult
 
 
-def format_json(result: ScanResult) -> str:
+def format_json(
+    result: ScanResult,
+    benchmark: BenchmarkResult | None = None,
+) -> str:
     """Serialize scan result to a JSON string (pretty-printed)."""
     data = {
         "version": "1.0.0",
@@ -41,6 +45,10 @@ def format_json(result: ScanResult) -> str:
                 "line_number": f.line_number,
                 "code_snippet": f.code_snippet,
                 "fix_snippet": f.fix_snippet,
+                "impact": f.impact,
+                "attack_scenario": f.attack_scenario,
+                "references": f.references,
+                "remediation_effort": f.remediation_effort,
             }
             for f in result.findings
         ],
@@ -87,6 +95,42 @@ def format_json(result: ScanResult) -> str:
             "low": sum(1 for f in result.findings if f.severity == "LOW"),
             "total": len(result.findings),
         },
+        "determinism_score": result.determinism_score,
+        "determinism_grade": result.determinism_grade,
+        "advisories": [
+            {
+                "id": adv.id,
+                "title": adv.title,
+                "category": adv.category,
+                "severity": adv.severity,
+                "matched_rules": adv.drako_rules,
+                "references": [
+                    {"type": ref.get("type", ""), "id": ref.get("id", "")}
+                    for ref in adv.references
+                ],
+            }
+            for advs in result.matched_advisories.values()
+            for adv in advs
+        ],
+        "reachability": [
+            {
+                "tool_name": tr.tool_name,
+                "status": tr.status.value,
+                "referencing_agents": tr.referencing_agents,
+                "file_path": tr.file_path,
+                "line_number": tr.line_number,
+            }
+            for tr in result.reachability
+        ],
     }
+
+    if benchmark is not None:
+        data["benchmark"] = {
+            "percentile": benchmark.percentile,
+            "framework_percentile": benchmark.framework_percentile,
+            "framework": benchmark.framework,
+            "projects_in_benchmark": benchmark.projects_in_benchmark,
+            "grade_distribution": benchmark.grade_distribution,
+        }
 
     return json.dumps(data, indent=2, default=str)

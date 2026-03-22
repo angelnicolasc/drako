@@ -5,7 +5,7 @@
 #
 # Optional: set DRAKO_API_KEY as a repo secret for authenticated uploads
 # and a deterministic badge at:
-#   https://api.useagentmesh.com/api/v1/scans/badge/<your-project-name>
+#   https://api.getdrako.com/api/v1/scans/badge/<your-project-name>
 
 name: Drako Governance Scan
 

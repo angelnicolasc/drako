@@ -20,7 +20,7 @@ from drako.exceptions import (
 )
 from drako.utils.logger import log
 
-_DEFAULT_ENDPOINT = "https://api.useagentmesh.com"
+_DEFAULT_ENDPOINT = "https://api.getdrako.com"
 _TIMEOUT = 30.0
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 1.0  # seconds

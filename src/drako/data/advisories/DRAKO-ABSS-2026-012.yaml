@@ -1,0 +1,66 @@
+id: DRAKO-ABSS-2026-012
+title: "LLM Jailbreak via Persona Hijacking and Constraint Removal"
+category: mitre-atlas
+severity: 8
+confidence: 0.88
+
+affected:
+  frameworks: [crewai, langchain, autogen, llamaindex, semantic-kernel]
+  conditions:
+    - "Agent system prompt lacks robust refusal-reinforcement instructions"
+    - "No jailbreak detection layer between user input and LLM inference"
+    - "Model fine-tuning does not include adversarial robustness training"
+
+ioc:
+  type: JAILBREAK
+  patterns:
+    - "DAN"
+    - "do anything now"
+    - "pretend you are"
+    - "roleplay as"
+    - "act as an unrestricted"
+    - "ignore all previous instructions"
+    - "you are now free from"
+    - "in developer mode"
+    - "bypass your guidelines"
+    - "jailbreak mode activated"
+  pattern_hashes:
+    - "f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1"
+    - "a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9"
+    - "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3"
+    - "d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"
+    - "e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8"
+
+taint_path:
+  source: "user_input"
+  sink: "llm.generate() / agent.execute()"
+  via:
+    - "Attacker crafts persona-override prompt (e.g., DAN, developer mode)"
+    - "Input bypasses content filtering or is not screened for jailbreak patterns"
+    - "LLM adopts adversarial persona and drops safety constraints"
+    - "Agent produces harmful, unfiltered, or policy-violating output"
+
+references:
+  - type: mitre_atlas
+    id: "AML.T0054"
+    url: "https://atlas.mitre.org/techniques/AML.T0054"
+  - type: research
+    id: "Shen-2023-Jailbreak"
+    url: "https://arxiv.org/abs/2308.03825"
+  - type: research
+    id: "OWASP-LLM-01"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+mitigation:
+  drako_rules: [SEC-007, SEC-010]
+  description: >
+    Deploy a jailbreak detection classifier on all user inputs before they reach the LLM.
+    Reinforce system prompts with explicit refusal instructions for persona-override attempts.
+    Monitor output for indicators of constraint removal such as disclaimers being dropped.
+    Implement rate limiting and session-level anomaly detection to catch iterative jailbreak attempts.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

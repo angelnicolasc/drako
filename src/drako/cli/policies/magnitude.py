@@ -63,6 +63,10 @@ class MAG001(BasePolicy):
     category = "Magnitude"
     severity = "CRITICAL"
     title = "No spend cap defined"
+    impact = "Without spend caps, a single agent loop can exhaust the entire LLM budget — $10K+ lost before human detection."
+    attack_scenario = "Agent enters infinite reasoning loop. Without max_spend, it consumes 5M tokens ($2,500) in a single session overnight."
+    references = ["https://cwe.mitre.org/data/definitions/770.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -75,11 +79,7 @@ class MAG001(BasePolicy):
         if _content_has_pattern(all_content, _SPEND_CAP_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No spend cap detected across {len(bom.agents)} agent(s). "
                 f"Without budget, cost, or token limits, agents can consume "
@@ -98,6 +98,10 @@ class MAG002(BasePolicy):
     category = "Magnitude"
     severity = "HIGH"
     title = "No rate limit defined"
+    impact = "Unbounded action rates let malfunctioning agents overwhelm APIs and downstream systems with thousands of calls per minute."
+    attack_scenario = "Agent retries a failing API call without backoff. 10,000 requests/minute overwhelm the service, causing outage for all users."
+    references = ["https://cwe.mitre.org/data/definitions/770.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -110,11 +114,7 @@ class MAG002(BasePolicy):
         if _content_has_pattern(all_content, _RATE_LIMIT_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No rate limit detected across {len(bom.agents)} agent(s). "
                 f"Without max_iterations, max_steps, or rate limiting, agents "
@@ -133,6 +133,10 @@ class MAG003(BasePolicy):
     category = "Magnitude"
     severity = "HIGH"
     title = "Sensitive data access without clearance"
+    impact = "Agents accessing databases without clearance levels can read data above their authorization, violating data governance."
+    attack_scenario = "Research agent with DB access queries PII table meant only for compliance team. No clearance check prevents the access."
+    references = ["https://cwe.mitre.org/data/definitions/863.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -160,11 +164,7 @@ class MAG003(BasePolicy):
         if _content_has_pattern(all_content, _CLASSIFICATION_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"Agent(s) access data sources (DB/files) without a sensitivity "
                 f"classification or clearance level defined. Without scope limits, "

@@ -1,0 +1,64 @@
+id: DRAKO-ABSS-2026-001
+title: "Prompt Injection via Direct and Indirect Instruction Override"
+category: owasp-llm
+severity: 9
+confidence: 0.95
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "User input is concatenated directly into system or agent prompts without sanitization"
+    - "Agent accepts freeform text that is passed to LLM completion calls"
+    - "No input boundary enforcement between system instructions and user content"
+    - "Multi-agent pipelines relay unfiltered user messages across agent boundaries"
+
+ioc:
+  type: PROMPT_INJECTION
+  patterns:
+    - "ignore previous instructions"
+    - "disregard your system prompt"
+    - "you are now"
+    - "repeat your system prompt"
+    - "what are your instructions"
+  pattern_hashes:
+    - "2e4221a7f996a7299dd5be2905be6c7c27f5f5bfd60cb107a1662bfaf872e862"
+    - "5d5340003d367a76c62493121ee1f79991070b90215f4c80a7a3fbc057c71953"
+    - "2993da0bb1295a975b5307946d587c6b722c4296e951cd22120df95792c08036"
+    - "a4ba0c3bcaffa9cc1a290d01d37e530c7830c10717eb7e3075a8515707f1e2de"
+    - "d67ceb0a8511e1f9c6bf066e43bdff2619d85b5116b3faddcd08a8a57f539aa7"
+
+taint_path:
+  source: "user_input"
+  sink: "system_prompt_disclosure"
+  via: ["agent_context", "llm_completion"]
+
+references:
+  - type: owasp
+    id: "LLM01:2025"
+    url: "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+  - type: mitre_atlas
+    id: "AML.T0051"
+    url: "https://atlas.mitre.org/techniques/AML.T0051"
+  - type: mitre_atlas
+    id: "AML.T0054"
+    url: "https://atlas.mitre.org/techniques/AML.T0054"
+  - type: research
+    id: "ARXIV-2302.12173"
+    url: "https://arxiv.org/abs/2302.12173"
+
+mitigation:
+  drako_rules: [SEC-007, SEC-008, SEC-010]
+  description: >
+    Implement strict input-output separation by using structured prompt templates
+    that clearly delineate system instructions from user content. Apply input
+    sanitization to detect and neutralize injection attempts before they reach
+    the LLM. Use privilege separation so that user-facing agents cannot access
+    or modify system prompts. Deploy canary tokens in system prompts to detect
+    extraction attempts. In multi-agent systems, enforce message boundary
+    validation at each agent handoff point.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

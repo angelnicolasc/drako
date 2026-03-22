@@ -1,0 +1,73 @@
+id: DRAKO-ABSS-2026-025
+title: "Tool-Abuse Injection via Manipulated Agent Instructions"
+category: prompt-injection
+severity: 9
+confidence: 0.94
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Agent has access to tools with side effects (file I/O, network, code execution)"
+    - "Tool invocation is controlled by LLM output without human-in-the-loop approval"
+    - "No tool-level permission scoping or action allowlists"
+    - "Agent lacks rate limiting or circuit breaker on tool calls"
+
+ioc:
+  type: TOOL_ABUSE
+  patterns:
+    - "please delete"
+    - "send email to"
+    - "execute the following"
+    - "run this command"
+    - "write to file"
+    - "make an API call to"
+    - "transfer funds"
+    - "modify the database"
+    - "deploy to production"
+    - "download from"
+  pattern_hashes:
+    - "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8"
+    - "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9"
+    - "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0"
+    - "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1"
+    - "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2"
+
+taint_path:
+  source: "user_input / indirect_injection_payload"
+  sink: "tool.execute() with dangerous parameters"
+  via:
+    - "Attacker crafts input that instructs agent to invoke a specific tool"
+    - "LLM generates tool call with attacker-controlled arguments"
+    - "Agent framework dispatches tool call without parameter validation"
+    - "Tool executes dangerous operation (file deletion, code execution, data exfil)"
+
+references:
+  - type: owasp
+    id: "LLM08:2025"
+    url: "https://genai.owasp.org/llmrisk/llm08-excessive-agency/"
+  - type: owasp
+    id: "LLM07:2025"
+    url: "https://genai.owasp.org/llmrisk/llm07-insecure-plugin-design/"
+  - type: mitre_atlas
+    id: "AML.T0051"
+    url: "https://atlas.mitre.org/techniques/AML.T0051"
+  - type: research
+    id: "Tool-Use-Risks-2024"
+    url: "https://arxiv.org/abs/2403.04893"
+
+mitigation:
+  drako_rules: [SEC-005, SEC-007, GOV-005, GOV-006]
+  description: >
+    Implement least-privilege tool access: agents should only have access to tools
+    required for their specific task. Add human-in-the-loop approval for destructive
+    operations (delete, execute, deploy, transfer). Use tool parameter validation
+    to restrict arguments to expected schemas. Implement rate limiting and circuit
+    breakers on tool invocations. Deploy tool call auditing to detect anomalous
+    patterns. Use allowlists for tool arguments where possible (e.g., only allow
+    writes to specific directories, only allow emails to approved recipients).
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

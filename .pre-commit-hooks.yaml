@@ -3,7 +3,7 @@
 # Users add this to their .pre-commit-config.yaml:
 #
 #   repos:
-#     - repo: https://github.com/useagentmesh/drako
+#     - repo: https://github.com/angelnicolasc/drako
 #       rev: v0.1.0
 #       hooks:
 #         - id: drako-scan

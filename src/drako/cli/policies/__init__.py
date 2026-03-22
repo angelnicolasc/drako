@@ -1,8 +1,9 @@
 """Policy evaluation engine for `drako scan`.
 
-Evaluates project against 60 built-in governance, security,
-compliance, operational, magnitude, identity, versioning, hooks,
-finops, resilience, a2a, multi-agent, and best-practice policy rules.
+Evaluates project against 73 built-in governance, security, compliance,
+operational, magnitude, identity, versioning, hooks, finops, resilience,
+a2a, multi-agent, vendor-concentration, framework, and best-practice
+policy rules.
 """
 
 from __future__ import annotations
@@ -23,12 +24,15 @@ from drako.cli.policies.finops import FINOPS_POLICIES
 from drako.cli.policies.resilience import RESILIENCE_POLICIES
 from drako.cli.policies.a2a import A2A_POLICIES
 from drako.cli.policies.multiagent import MULTIAGENT_POLICIES
+from drako.cli.policies.vendor_concentration import VCR_POLICIES
+from drako.cli.policies.frameworks import FRAMEWORK_POLICIES
+from drako.cli.policies.determinism import DETERMINISM_POLICIES
 
 if TYPE_CHECKING:
     from drako.cli.bom import AgentBOM
     from drako.cli.discovery import ProjectMetadata
 
-ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES + OPERATIONAL_POLICIES + MAGNITUDE_POLICIES + IDENTITY_POLICIES + VERSIONING_POLICIES + HOOKS_POLICIES + FINOPS_POLICIES + RESILIENCE_POLICIES + A2A_POLICIES + MULTIAGENT_POLICIES
+ALL_POLICIES = SECURITY_POLICIES + GOVERNANCE_POLICIES + COMPLIANCE_POLICIES + BEST_PRACTICE_POLICIES + OPERATIONAL_POLICIES + MAGNITUDE_POLICIES + IDENTITY_POLICIES + VERSIONING_POLICIES + HOOKS_POLICIES + FINOPS_POLICIES + RESILIENCE_POLICIES + A2A_POLICIES + MULTIAGENT_POLICIES + VCR_POLICIES + FRAMEWORK_POLICIES + DETERMINISM_POLICIES
 
 
 def evaluate_all_policies(bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:

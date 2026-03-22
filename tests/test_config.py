@@ -65,7 +65,7 @@ class TestConfigDefaults:
 
     def test_default_endpoint(self):
         config = DrakoConfig(tenant_id="t1")
-        assert config.endpoint == "https://api.useagentmesh.com"
+        assert config.endpoint == "https://api.getdrako.com"
 
     def test_default_framework(self):
         config = DrakoConfig(tenant_id="t1")
@@ -83,9 +83,20 @@ class TestConfigResolveApiKey:
         config = DrakoConfig(tenant_id="t1", api_key_env="MY_KEY")
         assert config.resolve_api_key() == "am_test_t_k"
 
+    def test_resolve_from_yaml_key(self):
+        """Falls back to api_key stored in YAML when env var is not set."""
+        config = DrakoConfig(tenant_id="t1", api_key="am_live_yaml_stored_key")
+        assert config.resolve_api_key() == "am_live_yaml_stored_key"
+
+    def test_env_takes_priority_over_yaml(self, monkeypatch):
+        """Env var wins when both env var and YAML api_key are present."""
+        monkeypatch.setenv("DRAKO_API_KEY", "am_live_from_env")
+        config = DrakoConfig(tenant_id="t1", api_key="am_live_from_yaml")
+        assert config.resolve_api_key() == "am_live_from_env"
+
     def test_resolve_missing_raises(self):
         config = DrakoConfig(tenant_id="t1")
-        with pytest.raises(ConfigError, match="not found"):
+        with pytest.raises(ConfigError, match="API key not found"):
             config.resolve_api_key()
 
 

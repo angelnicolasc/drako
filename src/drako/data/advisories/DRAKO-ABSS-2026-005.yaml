@@ -1,0 +1,63 @@
+id: DRAKO-ABSS-2026-005
+title: "Supply Chain Vulnerabilities in LLM Plugin and Model Dependencies"
+category: owasp-llm
+severity: 8
+confidence: 0.91
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "Model artifacts are loaded from public hubs without integrity verification"
+    - "Plugin or tool dependencies use unpinned versions"
+    - "Third-party agent components are imported without security review"
+    - "No software bill of materials (SBOM) exists for the agent pipeline"
+
+ioc:
+  type: SUPPLY_CHAIN
+  patterns:
+    - "pip install unknown-model-package"
+    - "from unverified_hub import agent"
+    - "model_version=\"latest\""
+    - "load_plugin(url=user_input)"
+  pattern_hashes:
+    - "18883206d68b307c839dd9e2c536dd6861ec0c1d241c8b2cfbee26c053f644b7"
+    - "3e6a7a435c01a50150cbab1730468b260c49414655bacd894693593834ab5c9c"
+    - "fb8d0e0f6d6e11890e7e8e79aaf91a4f544096a2e51146b1cdf7f2395b34c9e0"
+    - "462c60b7f28f3fee086d010c798b522b439ad3b4e325c76022d146494811d713"
+
+taint_path:
+  source: "external_package_registry"
+  sink: "agent_runtime"
+  via: ["dependency_resolution", "dynamic_import"]
+
+references:
+  - type: owasp
+    id: "LLM05:2025"
+    url: "https://genai.owasp.org/llmrisk/llm05-supply-chain-vulnerabilities/"
+  - type: mitre_atlas
+    id: "AML.T0010"
+    url: "https://atlas.mitre.org/techniques/AML.T0010"
+  - type: cwe
+    id: "CWE-829"
+    url: "https://cwe.mitre.org/data/definitions/829.html"
+  - type: cwe
+    id: "CWE-1357"
+    url: "https://cwe.mitre.org/data/definitions/1357.html"
+
+mitigation:
+  drako_rules: [VER-001, VER-002, SEC-001]
+  description: >
+    Pin all model and dependency versions using cryptographic hashes (SHA-256)
+    rather than mutable tags like "latest". Generate and maintain a Software
+    Bill of Materials (SBOM) for all agent components including models, plugins,
+    tools, and framework dependencies. Verify model checksums before loading
+    and use signed model artifacts where available. Implement an allowlist of
+    approved plugins and tools. Conduct security reviews of third-party agent
+    components before integration. Use private model registries with access
+    controls for production deployments.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

@@ -4,6 +4,41 @@ All notable changes to Drako are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [2.2.0] - 2026-03-22
+
+### Added
+- **Determinism Score** — second score (0-100) measuring agent reliability (unset temperatures, missing timeouts, no retries)
+- **Execution path reachability analysis** on findings — unreachable tools are dimmed
+- **25 DRAKO-ABSS security advisories** (OWASP Top 10 for LLMs, MITRE ATLAS, framework CVEs)
+- **Vendor Concentration Risk rules** (VCR-001, VCR-002, VCR-003)
+- **Framework-specific security rules** (FW-AUTOGEN-001/002, FW-CREWAI-001/002/003, FW-LANGGRAPH-001/002, FW-PYDANTIC-001, FW-SK-001/002)
+- **Detection rules** (DET-001 → DET-007) for determinism scoring
+- **Benchmark comparison system** (`--benchmark` flag)
+- **Baseline system** for incremental scanning (`--baseline` flag, `drako baseline show/reset`)
+- **Structured impact explanations** on all rules (`--details` flag with impact, attack_scenario, references)
+- **GitHub Action** for PR governance comments
+- **Score card SVG generation** (`--share` with scorecard + badge SVGs)
+- **PQL telemetry** (anonymous, opt-in)
+- **Framework security monitor** (6 frameworks, daily)
+- **HITL test harness** (`test_mode()`, `MockHITLResolver`)
+- **Policy simulation** (`drako simulate`)
+- **Config validation** (`drako validate`)
+- **Behavioral versioning**
+- **Policy templates** (fintech, healthcare, eu-ai-act, startup, enterprise)
+- **Out-of-process enforcement proxy** (`drako proxy start/stop/status`)
+- **Property-based testing** (28 Hypothesis tests)
+- **Helm chart** for Kubernetes deployment
+- **Type safety** (`mypy --strict` on new modules)
+
+### Changed
+- Renamed from AgentMesh to Drako
+- 80 rules total (up from 55)
+- 647 tests (up from 277)
+- Domain: getdrako.com
+- PyPI: `drako` (was `useagentmesh`)
+
+---
+
 ## [2.1.0] - 2026-03-18
 
 ### Added

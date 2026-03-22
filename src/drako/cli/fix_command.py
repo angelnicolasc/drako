@@ -1,9 +1,15 @@
-"""`drako fix` — Show proposed fixes for scan findings.
+"""`drako fix` — Auto-fix governance and compliance findings.
 
-Dry-run only: displays unified diffs without modifying any files.
+Runs the offline scanner, then applies fix_snippet patches for each
+finding that has an available fix.  Use --dry-run to preview the diffs
+without modifying any files.
 """
 
 from __future__ import annotations
+
+import difflib
+import sys
+from pathlib import Path
 
 import click
 
@@ -13,117 +19,109 @@ import click
 @click.option(
     "--dry-run",
     is_flag=True,
-    required=True,
-    help="Show proposed changes without modifying files (required).",
+    help="Show diffs without applying changes",
 )
 @click.option(
-    "--policy",
+    "--framework",
     default=None,
-    help="Only show fixes for a specific policy ID (e.g. SEC-001).",
+    help="Comma-separated frameworks to detect (e.g. crewai,langgraph)",
 )
-@click.option(
-    "--include-tests",
-    is_flag=True,
-    help="Include tests/ directories in the scan.",
-)
-def fix(directory: str, dry_run: bool, policy: str | None, include_tests: bool) -> None:
-    """Show proposed fixes for governance findings (dry-run only).
+def fix(directory: str, dry_run: bool, framework: str | None) -> None:
+    """Auto-fix governance findings in your AI agent project.
 
-    Scans DIRECTORY and displays unified diffs for auto-fixable findings.
-    No files are modified.
-
-    \b
-    Examples:
-        drako fix --dry-run              # Preview all auto-fixes
-        drako fix --dry-run --policy SEC-001   # Only hardcoded-key fixes
+    Scans DIRECTORY (defaults to current directory), then applies
+    available fixes.  Use --dry-run to preview what would change.
     """
-    # Lazy imports
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.syntax import Syntax
-    from rich.text import Text
-
     from drako.cli.scanner import run_scan
-    from drako.cli.autofix import AutoFixer, format_unified_diff
 
-    console = Console(stderr=True)
+    framework_filter = None
+    if framework:
+        framework_filter = [f.strip() for f in framework.split(",") if f.strip()]
 
-    console.print()
-    console.print(Panel(
-        "[bold]Drako Fix[/bold] \u2014 Dry Run",
-        border_style="cyan",
-        padding=(0, 2),
-    ))
-    console.print()
+    result = run_scan(directory, framework_filter=framework_filter)
 
-    # Run scan first
-    with console.status("[cyan]Scanning project...[/cyan]"):
-        result = run_scan(directory, include_tests=include_tests)
+    fixable = [f for f in result.findings if f.fix_snippet and f.file_path]
 
-    if result.score is None:
-        console.print("  [yellow]No agent frameworks detected. Nothing to fix.[/yellow]")
-        console.print()
-        return
+    if not fixable:
+        click.echo("No auto-fixable findings detected.")
+        sys.exit(0)
 
-    # Generate fixes
-    fixer = AutoFixer(result)
-    fixes = fixer.generate_all_fixes(policy_filter=policy)
+    applied = 0
+    skipped = 0
 
-    if not fixes:
-        if policy:
-            console.print(f"  [yellow]No auto-fixes available for {policy.upper()}.[/yellow]")
-        else:
-            console.print("  [green]No auto-fixable findings detected.[/green]")
-        console.print()
-        return
+    for finding in fixable:
+        file_path = Path(finding.file_path)
+        if not file_path.is_absolute():
+            file_path = Path(directory) / file_path
 
-    console.print(
-        f"  Found [bold]{len(fixes)}[/bold] auto-fixable issue{'s' if len(fixes) != 1 else ''}:\n"
-    )
-
-    for i, fix_item in enumerate(fixes, 1):
-        diff_text = format_unified_diff(fix_item)
-        if not diff_text:
+        if not file_path.exists():
+            click.secho(f"  [skip] {finding.policy_id}: file not found: {file_path}", fg="yellow")
+            skipped += 1
             continue
 
-        # Fix header
-        sev = fix_item.finding.severity
-        color = {"CRITICAL": "red", "HIGH": "dark_orange", "MEDIUM": "yellow", "LOW": "blue"}.get(sev, "white")
+        if not finding.code_snippet:
+            click.secho(f"  [skip] {finding.policy_id}: no code_snippet to replace", fg="yellow")
+            skipped += 1
+            continue
 
-        header = Text()
-        header.append(f"  {i}. ", style="bold")
-        header.append(f"{fix_item.finding.policy_id}", style=f"bold {color}")
-        header.append(f" [{sev}]", style=color)
-        header.append(f"  {fix_item.description}")
-        console.print(header)
+        try:
+            original = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            click.secho(f"  [skip] {finding.policy_id}: cannot read {file_path}: {exc}", fg="yellow")
+            skipped += 1
+            continue
 
-        if fix_item.file_path:
-            action = "create" if fix_item.new_file else "modify"
-            console.print(f"     [dim]{action}: {fix_item.file_path}[/dim]")
+        if finding.code_snippet not in original:
+            click.secho(
+                f"  [skip] {finding.policy_id}: code_snippet not found in {file_path.name}",
+                fg="yellow",
+            )
+            skipped += 1
+            continue
 
-        console.print(Syntax(
-            diff_text,
-            "diff",
-            theme="monokai",
-            line_numbers=False,
-            padding=1,
+        patched = original.replace(finding.code_snippet, finding.fix_snippet, 1)
+
+        # Generate unified diff
+        rel_path = str(file_path)
+        diff_lines = list(difflib.unified_diff(
+            original.splitlines(keepends=True),
+            patched.splitlines(keepends=True),
+            fromfile=f"--- {rel_path}",
+            tofile=f"+++ {rel_path}",
         ))
 
-        if fix_item.imports_needed:
-            console.print(
-                f"     [dim]Requires: {', '.join(fix_item.imports_needed)}[/dim]"
+        if not diff_lines:
+            skipped += 1
+            continue
+
+        if dry_run:
+            click.echo()
+            click.secho(f"  [{finding.policy_id}] {finding.title}", fg="cyan", bold=True)
+            for line in diff_lines:
+                line_s = line.rstrip("\n")
+                if line_s.startswith("---") or line_s.startswith("+++"):
+                    click.secho(line_s, fg="white", bold=True)
+                elif line_s.startswith("-"):
+                    click.secho(line_s, fg="red")
+                elif line_s.startswith("+"):
+                    click.secho(line_s, fg="green")
+                else:
+                    click.echo(line_s)
+        else:
+            file_path.write_text(patched, encoding="utf-8")
+            click.secho(
+                f"  [fixed] {finding.policy_id}: {finding.title} ({file_path.name})",
+                fg="green",
             )
 
-        console.print()
+        applied += 1
 
-    # Footer
-    console.print(
-        "  [dim]\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
-        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
-        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500[/dim]"
-    )
-    console.print("  [bold]This is a dry run \u2014 no files were modified.[/bold]")
-    console.print(
-        "  [dim]Actual file modification coming in a future release.[/dim]"
-    )
-    console.print()
+    click.echo()
+    if dry_run:
+        click.secho(
+            f"Dry run: {applied} fix(es) available, {skipped} skipped. "
+            f"Run without --dry-run to apply.",
+            fg="cyan",
+        )
+    else:
+        click.secho(f"Applied {applied} fix(es), {skipped} skipped.", fg="green")

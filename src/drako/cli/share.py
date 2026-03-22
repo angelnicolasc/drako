@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -185,11 +186,13 @@ def generate_share_texts(
     *,
     old_score: int | None = None,
     new_score: int | None = None,
+    scan_url: str | None = None,
 ) -> ShareTexts:
     """Generate rotated social share texts based on score band.
 
     Uses random.choice to pick one variant per platform so not all
-    posts are identical.
+    posts are identical. When scan_url is provided (from --upload),
+    it is appended to each share text.
     """
     band = _score_band(score)
 
@@ -213,6 +216,13 @@ def generate_share_texts(
     twitter = random.choice(_TWITTER_VARIANTS[band]).format(**fill)
     reddit = random.choice(_REDDIT_VARIANTS[band]).format(**fill)
     linkedin = random.choice(_LINKEDIN_VARIANTS[band]).format(**fill)
+
+    # Append scan URL when available (from --upload)
+    if scan_url:
+        url_suffix = f"\n{scan_url}"
+        twitter += url_suffix
+        reddit += url_suffix
+        linkedin += url_suffix
 
     return ShareTexts(twitter=twitter, reddit=reddit, linkedin=linkedin)
 
@@ -261,7 +271,7 @@ def render_share_card(
         card.append(f"  \u2717 {findings_high} high findings\n", style="dark_orange")
 
     card.append(f"\n  Framework: {framework or 'Unknown'}\n", style="dim")
-    card.append("  Scanned with Drako \u2014 useagentmesh.com\n", style="dim")
+    card.append("  Scanned with Drako \u2014 getdrako.com\n", style="dim")
 
     console.print(Panel(
         card,
@@ -286,16 +296,98 @@ def copy_to_clipboard(text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Scorecard & badge file generation
+# ---------------------------------------------------------------------------
+
+def save_scorecard(result: "ScanResult", directory: str) -> tuple[Path, Path]:
+    """Generate and save scorecard SVG + badge SVG to .drako/ directory.
+
+    Args:
+        result: The scan result to render.
+        directory: The scanned project directory (for .drako/ placement).
+
+    Returns:
+        Tuple of (scorecard_path, badge_path).
+    """
+    from drako.cli.formats.badge import generate_badge_svg
+    from drako.cli.formats.scorecard import generate_scorecard_svg
+    from drako.cli.scoring import findings_summary
+
+    counts = findings_summary(result.findings)
+    framework = "Unknown"
+    if result.bom.frameworks:
+        fw = result.bom.frameworks[0]
+        framework = f"{fw.name} {fw.version or ''}".strip()
+
+    scorecard_svg = generate_scorecard_svg(
+        score=result.score,
+        grade=result.grade,
+        agents=len(result.bom.agents),
+        tools=len(result.bom.tools),
+        models=len(result.bom.models),
+        framework=framework,
+        findings_critical=counts.get("CRITICAL", 0),
+        findings_high=counts.get("HIGH", 0),
+    )
+
+    badge_svg = generate_badge_svg(score=result.score, grade=result.grade)
+
+    drako_dir = Path(directory) / ".drako"
+    drako_dir.mkdir(parents=True, exist_ok=True)
+
+    scorecard_path = drako_dir / "scorecard.svg"
+    badge_path = drako_dir / "badge.svg"
+
+    scorecard_path.write_text(scorecard_svg, encoding="utf-8")
+    badge_path.write_text(badge_svg, encoding="utf-8")
+
+    return scorecard_path, badge_path
+
+
+# ---------------------------------------------------------------------------
 # Interactive share prompt
 # ---------------------------------------------------------------------------
 
-def run_share_flow(result: "ScanResult", console: Console | None = None) -> None:
-    """Complete --share flow: card + texts + clipboard."""
+def _safe_text(text: str) -> str:
+    """Replace emoji with ASCII fallbacks when the terminal cannot render them."""
+    import sys
+
+    encoding = getattr(sys.stdout, "encoding", "") or ""
+    if encoding.lower().replace("-", "") in ("utf8", "utf16"):
+        return text
+    _EMOJI_MAP = {
+        "\U0001f4cb": ">",   # 📋
+        "\U0001d54f": "X",   # 𝕏
+    }
+    for emoji, replacement in _EMOJI_MAP.items():
+        text = text.replace(emoji, replacement)
+    return text
+
+
+def run_share_flow(
+    result: "ScanResult",
+    console: Console | None = None,
+    scan_url: str | None = None,
+    directory: str = ".",
+) -> None:
+    """Complete --share flow: scorecard files + card + texts + clipboard."""
     import click
     from drako.cli.scoring import findings_summary
 
     if console is None:
         console = Console(stderr=True)
+
+    # Save scorecard and badge SVG files
+    try:
+        scorecard_path, badge_path = save_scorecard(result, directory)
+        console.print(
+            f"[green]  [share][/green] Scorecard saved to {scorecard_path}"
+        )
+        console.print(
+            f"[green]  [share][/green] Badge saved to {badge_path}"
+        )
+    except OSError:
+        pass  # Non-critical — don't fail the share flow
 
     counts = findings_summary(result.findings)
     findings_total = sum(counts.values())
@@ -328,12 +420,13 @@ def run_share_flow(result: "ScanResult", console: Console | None = None) -> None
         findings_critical=counts.get("CRITICAL", 0),
         findings_high=counts.get("HIGH", 0),
         findings_total=findings_total,
+        scan_url=scan_url,
     )
 
     console.print()
-    console.print("[bold]\U0001f4cb Share your score:[/bold]")
+    console.print(_safe_text("[bold]\U0001f4cb Share your score:[/bold]"))
     console.print()
-    console.print("[bold]\U0001d54f (Twitter):[/bold]")
+    console.print(_safe_text("[bold]\U0001d54f (Twitter):[/bold]"))
     console.print(f"  {texts.twitter}")
     console.print()
     console.print("[bold]Reddit:[/bold]")
@@ -344,7 +437,7 @@ def run_share_flow(result: "ScanResult", console: Console | None = None) -> None
     console.print()
 
     choice = click.prompt(
-        "\U0001f4cb Copy to clipboard? [twitter/reddit/linkedin/all/skip]",
+        _safe_text("\U0001f4cb Copy to clipboard? [twitter/reddit/linkedin/all/skip]"),
         default="skip",
         show_default=False,
     )

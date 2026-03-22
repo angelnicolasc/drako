@@ -83,7 +83,25 @@ def _govern_inner(obj, *, config_path: str | None = None, framework: str | None 
     if path:
         kwargs["config_path"] = path
 
-    # 4. Delegate to framework-specific wrapper
+    # 4. Telemetry (fire-and-forget)
+    try:
+        from drako.telemetry import send_event
+        agent_count = 0
+        tool_count = 0
+        if hasattr(obj, "agents"):
+            agents = obj.agents if isinstance(obj.agents, list) else []
+            agent_count = len(agents)
+            for a in agents:
+                tool_count += len(getattr(a, "tools", []))
+        send_event("govern_initialized", {
+            "framework": fw,
+            "agent_count": agent_count,
+            "tool_count": tool_count,
+        })
+    except Exception:
+        pass
+
+    # 5. Delegate to framework-specific wrapper
     if fw == "crewai":
         from drako.middleware.crewai import with_compliance
         return with_compliance(obj, **kwargs)

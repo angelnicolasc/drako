@@ -298,7 +298,7 @@ class DrakoConfig(BaseModel):
     tenant_id: str
     api_key_env: str = "DRAKO_API_KEY"
     api_key: str | None = None
-    endpoint: str = "https://api.useagentmesh.com"
+    endpoint: str = "https://api.getdrako.com"
     framework: str = "generic"
     # Legacy feature flags
     tools: ToolsConfig = Field(default_factory=ToolsConfig)

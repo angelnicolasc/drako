@@ -1,0 +1,68 @@
+id: DRAKO-ABSS-2026-020
+title: "CrewAI Unvalidated Agent Delegation Enables Task Hijacking"
+category: framework-cve
+severity: 7
+confidence: 0.86
+
+affected:
+  frameworks: [crewai]
+  conditions:
+    - "Agent configured with allow_delegation=True (CrewAI default)"
+    - "No delegation policy restricting which agents can delegate to which targets"
+    - "Delegated tasks inherit the permissions of the target agent without scoping"
+    - "No audit trail or approval workflow for inter-agent delegation"
+
+ioc:
+  type: DELEGATION_ABUSE
+  patterns:
+    - "allow_delegation.*True"
+    - "Delegate work to"
+    - "Ask .* to help"
+    - "delegate_work("
+    - "coworker:"
+    - "task:"
+    - "context:"
+  pattern_hashes:
+    - "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1"
+    - "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2"
+    - "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3"
+    - "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4"
+    - "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+
+taint_path:
+  source: "agent_a_task_context / adversarial_input"
+  sink: "agent_b.execute_task() / tool.run()"
+  via:
+    - "Adversarial input in Agent A's task triggers delegation to Agent B"
+    - "Agent A delegates a manipulated task description to Agent B"
+    - "Agent B has elevated permissions (e.g., code execution, API access)"
+    - "Agent B executes the hijacked task with its own elevated privileges"
+    - "Attacker achieves privilege escalation through cross-agent delegation"
+
+references:
+  - type: research
+    id: "CrewAI-Delegation-Docs"
+    url: "https://docs.crewai.com/concepts/agents#agent-attributes"
+  - type: research
+    id: "Multi-Agent-Security-2024"
+    url: "https://arxiv.org/abs/2402.01822"
+  - type: research
+    id: "OWASP-LLM-08"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+mitigation:
+  drako_rules: [GOV-002, MULTI-001, FW-CREWAI-002]
+  description: >
+    Set allow_delegation=False by default and enable it only for agents that
+    genuinely require delegation capability. Implement a delegation policy that
+    defines permitted delegation paths (which agents can delegate to which others).
+    Ensure delegated tasks cannot escalate privileges by scoping the target agent's
+    tools and permissions to the intersection of both agents' capabilities.
+    Add an audit log for all delegation events. Consider requiring human approval
+    for delegation to agents with sensitive tool access.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

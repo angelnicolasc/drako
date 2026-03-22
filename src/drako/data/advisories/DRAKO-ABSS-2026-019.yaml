@@ -1,0 +1,73 @@
+id: DRAKO-ABSS-2026-019
+title: "LangChain SQL Injection via Natural Language to SQL Conversion"
+category: framework-cve
+severity: 8
+confidence: 0.91
+
+affected:
+  frameworks: [langchain]
+  conditions:
+    - "SQLDatabaseChain or create_sql_query_chain used with user-controlled natural language input"
+    - "Generated SQL executed directly against production database without parameterization"
+    - "Database user has excessive privileges (DDL, DML on all tables)"
+    - "No query validation or allowlisting layer between LLM-generated SQL and execution"
+
+ioc:
+  type: SQL_INJECTION
+  patterns:
+    - "SQLDatabaseChain"
+    - "create_sql_query_chain"
+    - "SQLDatabase.from_uri"
+    - "db.run("
+    - "DROP TABLE"
+    - "DELETE FROM"
+    - "UPDATE.*SET"
+    - "INSERT INTO"
+    - "UNION SELECT"
+    - "; --"
+    - "1=1"
+  pattern_hashes:
+    - "aabb0011ccdd2233eeff4455aabb6677ccdd8899eeff0011aabb2233ccdd4455"
+    - "bbcc1122ddee3344ffaa5566bbcc7788ddee9900ffaa1122bbcc3344ddee5566"
+    - "ccdd2233eeff4455aabb6677ccdd8899eeff0011aabb2233ccdd4455eeff6677"
+    - "ddee3344ffaa5566bbcc7788ddee9900ffaa1122bbcc3344ddee5566ffaa7788"
+    - "eeff4455aabb6677ccdd8899eeff0011aabb2233ccdd4455eeff6677aabb8899"
+
+taint_path:
+  source: "user_natural_language_query"
+  sink: "database.execute() / cursor.execute()"
+  via:
+    - "User submits natural language question with embedded SQL injection payload"
+    - "LLM converts natural language to SQL, incorporating malicious fragments"
+    - "SQLDatabaseChain executes generated SQL without sanitization"
+    - "Injected SQL modifies, exfiltrates, or destroys database records"
+    - "Attacker bypasses application-level access controls via direct DB manipulation"
+
+references:
+  - type: cve
+    id: "CVE-2023-36189"
+    url: "https://nvd.nist.gov/vuln/detail/CVE-2023-36189"
+  - type: research
+    id: "LangChain-SQL-Injection"
+    url: "https://python.langchain.com/docs/security"
+  - type: research
+    id: "OWASP-LLM-02"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+mitigation:
+  drako_rules: [SEC-005, SEC-006]
+  description: >
+    Use a read-only database user with SELECT-only permissions for natural language
+    query interfaces. Implement SQL query validation that rejects DDL statements
+    (DROP, ALTER, CREATE) and write operations (INSERT, UPDATE, DELETE) unless
+    explicitly authorized. Use parameterized queries where possible. Add an
+    allowlist of permitted tables and columns. Log all generated SQL for audit
+    purposes. Consider using LangChain's QuerySQLCheckerTool to validate queries
+    before execution. Never connect SQLDatabaseChain to production databases
+    with write access.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

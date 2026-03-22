@@ -1,7 +1,7 @@
 """CrewAI project with known governance issues for testing."""
 from crewai import Agent, Task, Crew
 
-# ruleid: SEC-001
+# SEC-001: Hardcoded API key
 OPENAI_API_KEY = "sk-proj-abc123def456ghi789jkl012mno345"
 
 # Agents
@@ -27,11 +27,11 @@ review_agent = Agent(
     goal="Review content quality",
 )
 
-# ruleid: SEC-007
+# SEC-007: Prompt injection via f-string
 user_query = "analyze this data"
 prompt = f"System: You are an assistant. User request: {user_query}"
 
-# ruleid: SEC-005
+# SEC-005: Arbitrary code execution
 def run_user_code(code_str):
     exec(code_str)
 

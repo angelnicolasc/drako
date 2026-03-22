@@ -1,0 +1,67 @@
+id: DRAKO-ABSS-2026-014
+title: "ML Model Inference API Abuse and Model Extraction"
+category: mitre-atlas
+severity: 6
+confidence: 0.82
+
+affected:
+  frameworks: [crewai, langchain, autogen, llamaindex, semantic-kernel]
+  conditions:
+    - "Agent exposes LLM inference endpoint without per-user rate limiting"
+    - "No authentication or weak API key management for model access"
+    - "Agent does not enforce token budget or cost ceiling per session"
+    - "Model responses include logprobs or confidence scores accessible to end users"
+
+ioc:
+  type: API_ABUSE
+  patterns:
+    - "high_frequency_identical_prompts"
+    - "systematic_prompt_variation"
+    - "logprob_extraction_requests"
+    - "temperature_0_repeated_queries"
+    - "max_tokens_enumeration"
+    - "embedding_bulk_extraction"
+  pattern_hashes:
+    - "f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2"
+    - "a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"
+    - "b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6"
+    - "c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8"
+    - "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0"
+    - "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1"
+
+taint_path:
+  source: "external_api_client"
+  sink: "llm_inference_endpoint / embedding_endpoint"
+  via:
+    - "Attacker identifies publicly accessible model inference API"
+    - "Systematic queries extract model behavior boundaries and decision logic"
+    - "High-volume requests with controlled inputs approximate model weights"
+    - "Extracted knowledge enables model cloning or targeted adversarial attacks"
+
+references:
+  - type: mitre_atlas
+    id: "AML.T0040"
+    url: "https://atlas.mitre.org/techniques/AML.T0040"
+  - type: research
+    id: "Tramer-2016-Stealing-ML"
+    url: "https://arxiv.org/abs/1609.02943"
+  - type: research
+    id: "OWASP-LLM-10"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+mitigation:
+  drako_rules: [GOV-007, MAG-001, ID-001]
+  description: >
+    Enforce per-user and per-session rate limits on all model inference endpoints.
+    Require authentication with scoped API keys for model access. Implement token
+    budgets and cost ceilings to prevent runaway consumption. Do not expose raw
+    logprobs, confidence scores, or embedding vectors to untrusted clients.
+    Monitor for statistical anomalies in query patterns that suggest systematic
+    model probing or extraction attempts. Apply differential privacy to model outputs
+    when feasible.
+  remediation_effort: significant
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

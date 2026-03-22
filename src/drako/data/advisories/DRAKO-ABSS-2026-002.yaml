@@ -1,0 +1,64 @@
+id: DRAKO-ABSS-2026-002
+title: "Insecure Output Handling Enabling Downstream Code Execution"
+category: owasp-llm
+severity: 8
+confidence: 0.92
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index]
+  conditions:
+    - "LLM output is rendered in web UI without HTML/JS sanitization"
+    - "Agent output is passed to eval(), exec(), or shell commands"
+    - "Downstream systems consume LLM responses as trusted structured data"
+    - "No output encoding or escaping is applied before rendering"
+
+ioc:
+  type: OUTPUT_INJECTION
+  patterns:
+    - "<script>"
+    - "javascript:"
+    - "onclick="
+    - "onerror="
+    - "eval("
+  pattern_hashes:
+    - "5b63e5b2097fc6906601e85e381d998a7db971aca73c9213dc2b107ccab734d4"
+    - "e3a99cdc7eb3e7a8273917911ebffff0cec5c63aad49a0cdeca7adaaa76eba21"
+    - "fc5a2a664ba559c6e0e9e729bd63d255db40c8622c0e8adf5fde14c55fbc4706"
+    - "80b9aa688e5b87511014945a18a2b4fb299c6614f1f36b280bd81bff829a73db"
+    - "a475ee49c7acce90b0c9124fcaaf388999e9ef2c94d490d52a855d24c2d97deb"
+
+taint_path:
+  source: "llm_output"
+  sink: "downstream_system"
+  via: ["unvalidated_rendering"]
+
+references:
+  - type: owasp
+    id: "LLM02:2025"
+    url: "https://genai.owasp.org/llmrisk/llm02-insecure-output-handling/"
+  - type: mitre_atlas
+    id: "AML.T0048"
+    url: "https://atlas.mitre.org/techniques/AML.T0048"
+  - type: cwe
+    id: "CWE-79"
+    url: "https://cwe.mitre.org/data/definitions/79.html"
+  - type: cwe
+    id: "CWE-94"
+    url: "https://cwe.mitre.org/data/definitions/94.html"
+
+mitigation:
+  drako_rules: [SEC-006, BP-002]
+  description: >
+    Treat all LLM output as untrusted. Apply context-appropriate output encoding
+    (HTML entity encoding for web rendering, parameterized queries for SQL, shell
+    escaping for command execution). Implement Content Security Policy headers to
+    mitigate XSS from injected scripts. Never pass raw LLM output to eval(),
+    exec(), os.system(), or subprocess without strict allowlist validation.
+    Use structured output parsers that enforce expected schemas and reject
+    malformed responses.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

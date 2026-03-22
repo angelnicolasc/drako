@@ -3,7 +3,7 @@
   "name": "io.github.drako/drako",
   "description": "AI agent governance and compliance middleware: deterministic policy enforcement, cryptographic audit trails with digital signatures, DLP/PII detection via Presidio, Trust Score per agent (0-100), EU AI Act mapping (Art. 9, 11, 12, 14), Agent BOM generation, and Circuit Breaker isolation.",
   "repository": {
-    "url": "https://github.com/agentmesh/drako-sdk",
+    "url": "https://github.com/angelnicolasc/drako",
     "source": "github"
   },
   "version": "0.1.0",

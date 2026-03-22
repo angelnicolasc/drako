@@ -1,0 +1,66 @@
+id: DRAKO-ABSS-2026-010
+title: "Unbounded Consumption via Missing Token, Cost, and Rate Controls"
+category: owasp-llm
+severity: 7
+confidence: 0.91
+
+affected:
+  frameworks: [crewai, langchain, autogen, llama-index, semantic-kernel]
+  conditions:
+    - "No maximum token limit configured for LLM API calls"
+    - "Agent execution loops lack iteration caps or cost budgets"
+    - "Rate limiting is not enforced at the application or API gateway level"
+    - "Multi-agent orchestrations have no aggregate cost ceiling"
+
+ioc:
+  type: UNBOUNDED_CONSUMPTION
+  patterns:
+    - "max_tokens: null"
+    - "cost_limit: none"
+    - "rate_limit: disabled"
+    - "max_iterations: -1"
+    - "budget_cap: unlimited"
+  pattern_hashes:
+    - "6a0904662e68f70d1eec668e9551a4821f43b5cc3957ba29a0f3fcb26cc8b546"
+    - "214d1919ca34aaa7f32e662fb752b5665811a08257b5d5eefca3c683b2815451"
+    - "3fcb67ee1d5b3cf36dccdfc4f47a82c04035db91fcbb4146e12575a9c629fc0b"
+    - "4701b8e8d3faf7316a830ea11df80ebd4e2735d69ce7a5a3f74092b77ec57187"
+    - "45abd8b9713ce0c9689fe3dd4db45df4241556f43c2300b872d49d275d03e236"
+
+taint_path:
+  source: "agent_configuration"
+  sink: "cloud_billing_account"
+  via: ["unmetered_api_calls", "runaway_agent_loop"]
+
+references:
+  - type: owasp
+    id: "LLM10:2025"
+    url: "https://genai.owasp.org/llmrisk/llm10-unbounded-consumption/"
+  - type: mitre_atlas
+    id: "AML.T0029"
+    url: "https://atlas.mitre.org/techniques/AML.T0029"
+  - type: cwe
+    id: "CWE-770"
+    url: "https://cwe.mitre.org/data/definitions/770.html"
+  - type: cwe
+    id: "CWE-799"
+    url: "https://cwe.mitre.org/data/definitions/799.html"
+
+mitigation:
+  drako_rules: [MAG-001, MAG-002, MAG-003, GOV-007]
+  description: >
+    Configure explicit max_tokens limits on every LLM API call. Implement
+    per-user, per-session, and per-workflow cost budgets with hard caps that
+    halt execution when exceeded. Apply rate limiting at multiple layers
+    (API gateway, application middleware, and per-agent). Set maximum iteration
+    counts for all agent loops and recursive tool chains. Deploy real-time
+    cost monitoring dashboards with alerting thresholds at 50%, 80%, and 95%
+    of budget. Use circuit breakers that terminate runaway workflows
+    automatically. For multi-agent systems, enforce aggregate cost ceilings
+    across the entire orchestration, not just per-agent limits.
+  remediation_effort: low
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

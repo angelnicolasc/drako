@@ -42,7 +42,7 @@ class TestCV001:
     def test_config_with_endpoint(self):
         metadata, bom = _make_metadata(
             {"main.py": 'from crewai import Agent\n'},
-            config_files={".drako.yaml": "version: '1.0'\ntenant_id: test\nendpoint: https://api.useagentmesh.com\napi_key_env: DRAKO_API_KEY\n"},
+            config_files={".drako.yaml": "version: '1.0'\ntenant_id: test\nendpoint: https://api.getdrako.com\napi_key_env: DRAKO_API_KEY\n"},
         )
         findings = CV001().evaluate(bom, metadata)
         assert len(findings) == 0

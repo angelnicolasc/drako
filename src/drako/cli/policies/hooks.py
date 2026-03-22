@@ -17,6 +17,10 @@ class HOOK001(BasePolicy):
     category = "Hooks"
     severity = "MEDIUM"
     title = "No pre-action validation hooks"
+    impact = "Without pre-action hooks, you cannot inject custom validation before tool execution — no last line of defense."
+    attack_scenario = "Agent executes SQL DELETE without any pre-action hook to check for dangerous keywords. Data is permanently lost."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:
@@ -30,11 +34,7 @@ class HOOK001(BasePolicy):
 
         if not config_content:
             # No config → report if project has tools
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     f"Project has {len(bom.tools)} tool(s) but no pre-action hooks configured. "
                     "Hooks allow you to inject custom validation before tool execution."
@@ -53,11 +53,7 @@ class HOOK001(BasePolicy):
         if "pre_action:" in config_content and "hooks:" in config_content:
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No pre-action hooks configured for {len(bom.tools)} tool(s). "
                 "Consider adding validation hooks to enforce custom policies before execution."
@@ -79,6 +75,10 @@ class HOOK002(BasePolicy):
     category = "Hooks"
     severity = "MEDIUM"
     title = "No session-end gate (Stop hook)"
+    impact = "Without a session-end gate, agents can finish without verifying that required checks or deliverables were completed."
+    attack_scenario = "Agent completes a code review session but skips the security check. No stop hook verifies that all checks passed."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         config_content = ""
@@ -93,11 +93,7 @@ class HOOK002(BasePolicy):
         if "on_session_end:" in config_content and "hooks:" in config_content:
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 "No session-end gate (Stop hook) configured. The agent can finish "
                 "a session without verifying that all required checks passed."
@@ -120,6 +116,10 @@ class HOOK003(BasePolicy):
     category = "Hooks"
     severity = "LOW"
     title = "Hook without timeout configured"
+    impact = "Script hooks without timeouts can hang indefinitely, blocking the entire governance pipeline."
+    attack_scenario = "Custom validation hook makes an HTTP call that hangs. Without timeout_ms, every agent action is blocked indefinitely."
+    references = ["https://cwe.mitre.org/data/definitions/400.html"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         config_content = ""
@@ -137,11 +137,7 @@ class HOOK003(BasePolicy):
         has_timeout = "timeout_ms:" in config_content
 
         if has_scripts and not has_timeout:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "Script hooks detected without explicit timeout_ms. "
                     "Runaway scripts could block the governance pipeline."

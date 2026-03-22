@@ -113,22 +113,23 @@ def load_scan_cache(
 
 
 def ensure_gitignore_cache(directory: str = ".") -> None:
-    """Add `.drako/` to `.gitignore` if not already present.
+    """Add `.drako/.last_scan.json` to `.gitignore` if not already present.
 
-    This ensures the scan cache (which contains local paths) is not
-    committed to version control. The `.drako.yaml` config file
-    itself should be committed — only the cache dir is ignored.
+    The scan cache contains local paths and should not be committed.
+    The `.drako/.baseline.json` file IS intended to be committed
+    (shared across the team), so we only ignore the cache file.
     """
     gitignore = Path(directory) / ".gitignore"
+    target = ".drako/.last_scan.json"
 
     if gitignore.exists():
         content = gitignore.read_text(encoding="utf-8")
-        if ".drako/" in content:
+        if target in content:
             return
         with open(gitignore, "a", encoding="utf-8") as f:
-            f.write("\n# Drako scan cache (local paths, not for VCS)\n.drako/\n")
+            f.write(f"\n# Drako scan cache (local paths, not for VCS)\n{target}\n")
     else:
         gitignore.write_text(
-            "# Drako scan cache (local paths, not for VCS)\n.drako/\n",
+            f"# Drako scan cache (local paths, not for VCS)\n{target}\n",
             encoding="utf-8",
         )

@@ -9,7 +9,7 @@
 
 services:
   drako-proxy:
-    image: useagentmesh/proxy:latest
+    image: drako/proxy:latest
     build:
       context: .
       dockerfile: Dockerfile.proxy

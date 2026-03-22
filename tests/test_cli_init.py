@@ -25,7 +25,7 @@ class TestInitDetection:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_tenant1_secret"])
@@ -40,7 +40,7 @@ class TestInitDetection:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s"])
@@ -54,7 +54,7 @@ class TestInitDetection:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s"])
@@ -70,7 +70,7 @@ class TestInitGeneratesFiles:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_myorg_key123", "--framework", "crewai"])
@@ -92,7 +92,7 @@ class TestInitGeneratesFiles:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s"])
@@ -111,7 +111,7 @@ class TestInitGeneratesFiles:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s", "--manual"])
@@ -129,7 +129,7 @@ class TestInitGeneratesFiles:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s", "--balanced"])
@@ -145,7 +145,7 @@ class TestInitGeneratesFiles:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s", "--strict"])
@@ -164,7 +164,7 @@ class TestInitAPIValidation:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(401, text="Unauthorized")
             )
             result = runner.invoke(init, ["--api-key", "bad_key"])
@@ -178,7 +178,7 @@ class TestInitAPIValidation:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 side_effect=httpx.ConnectError("offline")
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s", "--framework", "generic"])
@@ -195,7 +195,7 @@ class TestInitOverwrite:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             # Say skip to overwrite
@@ -214,7 +214,7 @@ class TestInitEnvHint:
         import respx
         import httpx
         with respx.mock:
-            respx.get("https://api.useagentmesh.com/api/v1/stats").mock(
+            respx.get("https://api.getdrako.com/api/v1/stats").mock(
                 return_value=httpx.Response(200, json={"ok": True})
             )
             result = runner.invoke(init, ["--api-key", "am_live_t_s", "--framework", "generic"])

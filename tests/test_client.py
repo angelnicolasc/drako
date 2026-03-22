@@ -32,7 +32,7 @@ class TestClientConstruction:
         monkeypatch.setenv("DRAKO_API_KEY", "am_test_envtenant_key")
         c = DrakoClient.from_env()
         assert c._tenant_id == "envtenant"
-        assert c._endpoint == "https://api.useagentmesh.com"
+        assert c._endpoint == "https://api.getdrako.com"
 
     def test_from_env_custom_endpoint(self, monkeypatch):
         monkeypatch.setenv("DRAKO_API_KEY", "am_test_t_k")

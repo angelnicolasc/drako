@@ -17,6 +17,10 @@ class FIN001(BasePolicy):
     category = "FinOps"
     severity = "HIGH"
     title = "No cost tracking on LLM calls"
+    impact = "Without cost tracking, unexpected LLM spend from agent loops or hallucinations goes undetected until the monthly bill."
+    attack_scenario = "Agent enters reasoning loop generating 2M tokens daily. Without cost tracking, the $5K/month spike goes unnoticed for weeks."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:
@@ -38,7 +42,7 @@ class FIN001(BasePolicy):
         has_llm_calls = False
         has_cost_tracking = False
 
-        for path, content in metadata.file_contents.items():
+        for path, content in metadata.source_files.items():
             for pat in llm_patterns:
                 if pat in content:
                     has_llm_calls = True
@@ -49,11 +53,7 @@ class FIN001(BasePolicy):
                     break
 
         if has_llm_calls and not has_cost_tracking:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "Project makes LLM API calls without any cost tracking mechanism. "
                     "Without cost observability, unexpected spend can go undetected."
@@ -78,6 +78,10 @@ class FIN002(BasePolicy):
     category = "FinOps"
     severity = "MEDIUM"
     title = "Single model for all tasks (no cost optimization)"
+    impact = "Using a frontier model for all tasks wastes 60-80% of LLM spend — simple tasks don't need expensive models."
+    attack_scenario = "Team uses GPT-4o for text summarization. Switching to GPT-4o-mini for this task would cut that cost by 90%."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         model_refs: set[str] = set()
@@ -88,18 +92,14 @@ class FIN002(BasePolicy):
             "gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash",
         ]
 
-        for path, content in metadata.file_contents.items():
+        for path, content in metadata.source_files.items():
             for model in known_models:
                 if model in content:
                     model_refs.add(model)
 
         if len(model_refs) == 1:
             model_name = next(iter(model_refs))
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     f"Project uses only one model ({model_name}) for all tasks. "
                     "Routing simpler tasks to cheaper models can reduce costs significantly."
@@ -125,6 +125,10 @@ class FIN003(BasePolicy):
     category = "FinOps"
     severity = "MEDIUM"
     title = "No response caching configured"
+    impact = "Repeated identical LLM queries waste tokens and increase latency — caching can reduce costs by 30-50%."
+    attack_scenario = "Agent repeatedly asks the same question during a session. Each call costs $0.05, totaling $500/month in duplicate queries."
+    references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:
@@ -143,7 +147,7 @@ class FIN003(BasePolicy):
         ]
 
         has_cache = False
-        for path, content in metadata.file_contents.items():
+        for path, content in metadata.source_files.items():
             for pat in cache_patterns:
                 if pat in content:
                     has_cache = True
@@ -157,16 +161,12 @@ class FIN003(BasePolicy):
         ]
         has_llm = any(
             pat in content
-            for path, content in metadata.file_contents.items()
+            for path, content in metadata.source_files.items()
             for pat in llm_patterns
         )
 
         if has_llm and not has_cache:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "LLM calls detected without any caching layer. "
                     "Repeated identical queries waste tokens and increase latency."

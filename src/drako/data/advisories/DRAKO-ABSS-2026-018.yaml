@@ -1,0 +1,72 @@
+id: DRAKO-ABSS-2026-018
+title: "AutoGen Unrestricted Code Execution in Agent Conversations"
+category: framework-cve
+severity: 9
+confidence: 0.93
+
+affected:
+  frameworks: [autogen]
+  conditions:
+    - "CodeExecutorAgent or UserProxyAgent configured with code_execution_config without Docker sandboxing"
+    - "work_dir set to a directory with write access to sensitive paths"
+    - "use_docker set to False or not configured (defaults vary by version)"
+    - "No allowlist for permitted code operations or system calls"
+
+ioc:
+  type: CODE_EXECUTION
+  patterns:
+    - "code_execution_config"
+    - "use_docker.*False"
+    - "UserProxyAgent"
+    - "CodeExecutorAgent"
+    - "os.system("
+    - "subprocess.run("
+    - "shutil.rmtree("
+    - "open(.*,'w')"
+    - "requests.post("
+    - "__import__("
+  pattern_hashes:
+    - "ff00ee11dd22cc33bb44aa55ff66ee77dd88cc99bb00aa11ff22ee33dd44cc55"
+    - "ee11dd22cc33bb44aa55ff66ee77dd88cc99bb00aa11ff22ee33dd44cc55bb66"
+    - "dd22cc33bb44aa55ff66ee77dd88cc99bb00aa11ff22ee33dd44cc55bb66aa77"
+    - "cc33bb44aa55ff66ee77dd88cc99bb00aa11ff22ee33dd44cc55bb66aa77ff88"
+    - "bb44aa55ff66ee77dd88cc99bb00aa11ff22ee33dd44cc55bb66aa77ff88ee99"
+
+taint_path:
+  source: "llm_generated_code / agent_conversation"
+  sink: "local_python_interpreter / system_shell"
+  via:
+    - "AutoGen agent generates Python code during multi-agent conversation"
+    - "Code executor runs generated code without sandbox isolation"
+    - "Generated code contains malicious operations (file access, network calls, OS commands)"
+    - "Code executes with full permissions of the host process"
+    - "Attacker achieves data exfiltration, persistence, or lateral movement"
+
+references:
+  - type: research
+    id: "AutoGen-Security-Docs"
+    url: "https://microsoft.github.io/autogen/docs/topics/code-execution/cli-code-executor/"
+  - type: research
+    id: "OWASP-LLM-08"
+    url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+  - type: github_issue
+    id: "autogen-security-advisory"
+    url: "https://github.com/microsoft/autogen/security"
+
+mitigation:
+  drako_rules: [SEC-005, FW-AUTOGEN-001]
+  description: >
+    Always enable Docker-based code execution by setting use_docker=True in
+    code_execution_config. Use the DockerCommandLineCodeExecutor with resource
+    limits (CPU, memory, network isolation). Implement code analysis before
+    execution to block dangerous imports (os, subprocess, shutil, socket).
+    Restrict the working directory to a temporary, isolated path with no access
+    to sensitive files. Set execution timeouts to prevent infinite loops or
+    resource exhaustion. Audit all CodeExecutorAgent and UserProxyAgent
+    configurations in the codebase.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

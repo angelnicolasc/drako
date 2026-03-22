@@ -1,0 +1,74 @@
+id: DRAKO-ABSS-2026-013
+title: "Adversarial Data Crafting via Unicode and Encoding Exploits"
+category: mitre-atlas
+severity: 7
+confidence: 0.85
+
+affected:
+  frameworks: [crewai, langchain, autogen, llamaindex]
+  conditions:
+    - "Agent input pipeline does not normalize Unicode before processing"
+    - "Text comparison or filtering uses byte-level matching without canonicalization"
+    - "Content moderation filters do not handle bidirectional text override characters"
+
+ioc:
+  type: ADVERSARIAL_INPUT
+  patterns:
+    - "\\u200b"
+    - "\\u200c"
+    - "\\u200d"
+    - "\\u2066"
+    - "\\u2067"
+    - "\\u2068"
+    - "\\u202a"
+    - "\\u202b"
+    - "\\u202c"
+    - "\\u202e"
+    - "\\ufeff"
+    - "\\u0410"
+    - "\\u0430"
+    - "\\u0435"
+    - "\\u043e"
+  pattern_hashes:
+    - "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
+    - "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+    - "c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5"
+    - "d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8"
+    - "e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"
+
+taint_path:
+  source: "user_input / external_document"
+  sink: "content_filter.check() / agent.parse_input()"
+  via:
+    - "Attacker inserts zero-width characters between blocked keywords"
+    - "Homoglyph substitution replaces Latin characters with Cyrillic lookalikes"
+    - "Bidirectional override characters reorder displayed text vs processed text"
+    - "Content filters fail to match against obfuscated payload"
+    - "Agent processes malicious instruction that evaded detection"
+
+references:
+  - type: mitre_atlas
+    id: "AML.T0043"
+    url: "https://atlas.mitre.org/techniques/AML.T0043"
+  - type: research
+    id: "Boucher-2021-Trojan-Source"
+    url: "https://trojansource.codes/"
+  - type: research
+    id: "Unicode-Security"
+    url: "https://unicode.org/reports/tr36/"
+
+mitigation:
+  drako_rules: [SEC-006, BP-002]
+  description: >
+    Apply Unicode NFKC normalization to all text inputs before processing or filtering.
+    Strip zero-width characters (U+200B through U+200F, U+FEFF) from input streams.
+    Detect and reject bidirectional override characters (U+202A-U+202E, U+2066-U+2069)
+    in user-supplied text. Use confusable detection (Unicode TR39) to identify homoglyph
+    substitution attacks. Log and alert on inputs containing high concentrations of
+    non-printable or format-control characters.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

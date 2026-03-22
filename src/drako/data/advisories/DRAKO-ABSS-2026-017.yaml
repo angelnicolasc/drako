@@ -1,0 +1,70 @@
+id: DRAKO-ABSS-2026-017
+title: "LangChain Arbitrary Code Execution via Unsafe Deserialization in LCEL"
+category: framework-cve
+severity: 9
+confidence: 0.95
+
+affected:
+  frameworks: [langchain]
+  conditions:
+    - "Application loads serialized LangChain objects from untrusted sources"
+    - "LCEL chains constructed from user-provided configuration without validation"
+    - "pickle or yaml.unsafe_load used to deserialize chain definitions"
+    - "langchain version < 0.0.325 with load_chain or load_llm from untrusted paths"
+
+ioc:
+  type: CODE_EXECUTION
+  patterns:
+    - "pickle.loads"
+    - "yaml.unsafe_load"
+    - "yaml.FullLoader"
+    - "load_chain("
+    - "load_llm("
+    - "__reduce__"
+    - "os.system"
+    - "subprocess.Popen"
+    - "exec("
+    - "eval("
+  pattern_hashes:
+    - "11aa22bb33cc44dd55ee66ff77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd"
+    - "22bb33cc44dd55ee66ff77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd77ee"
+    - "33cc44dd55ee66ff77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd77ee88ff"
+    - "44dd55ee66ff77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd77ee88ff99aa"
+    - "55ee66ff77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd77ee88ff99aa00bb"
+
+taint_path:
+  source: "serialized_chain_file / user_config_input"
+  sink: "python_runtime / os.system()"
+  via:
+    - "Attacker crafts malicious serialized LangChain object (pickle, YAML, JSON)"
+    - "Application deserializes object using unsafe loader"
+    - "Deserialization triggers __reduce__ or custom constructor execution"
+    - "Arbitrary Python code executes in the application process context"
+    - "Attacker achieves remote code execution on the host"
+
+references:
+  - type: cve
+    id: "CVE-2023-36258"
+    url: "https://nvd.nist.gov/vuln/detail/CVE-2023-36258"
+  - type: cve
+    id: "CVE-2023-29374"
+    url: "https://nvd.nist.gov/vuln/detail/CVE-2023-29374"
+  - type: research
+    id: "LangChain-Security-Advisory"
+    url: "https://github.com/langchain-ai/langchain/security"
+
+mitigation:
+  drako_rules: [SEC-005, FW-LANGGRAPH-001]
+  description: >
+    Never deserialize LangChain objects from untrusted sources using pickle or
+    yaml.unsafe_load. Use langchain's safe loading mechanisms with allow_dangerous_deserialization
+    explicitly set to False. Validate all chain configurations against a strict schema before
+    construction. Run LangChain applications in sandboxed environments with minimal OS
+    permissions. Pin LangChain to patched versions (>= 0.0.325 for CVE-2023-36258).
+    Audit all uses of load_chain, load_llm, and custom tool constructors.
+  remediation_effort: moderate
+
+metadata:
+  published: "2026-03-20"
+  updated: "2026-03-20"
+  author: "Drako Security Research"

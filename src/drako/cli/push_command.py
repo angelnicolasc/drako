@@ -14,27 +14,13 @@ from drako.exceptions import ConfigError
 _CONFIG_FILENAME = ".drako.yaml"
 
 
-def _load_client(config_path: str | None = None) -> "DrakoClient | None":
-    """Load config and return an authenticated DrakoClient, or None on error."""
+def _load_client(config_path: str = _CONFIG_FILENAME):
+    """Load an DrakoClient from config. Shared by push/history/diff/rollback."""
     from drako.client import DrakoClient
 
-    path = Path(config_path or _CONFIG_FILENAME)
-    if not path.exists():
-        click.secho(f"  [error]  {path} not found. Run 'drako init' first.", fg="red")
-        return None
-
-    try:
-        config = DrakoConfig.load(str(path))
-        api_key = config.resolve_api_key()
-    except ConfigError as exc:
-        click.secho(f"  [error]  {exc}", fg="red")
-        return None
-
-    return DrakoClient(
-        api_key=api_key,
-        endpoint=config.endpoint,
-        tenant_id=config.tenant_id,
-    )
+    config = DrakoConfig.load(config_path)
+    api_key = config.resolve_api_key()
+    return DrakoClient(api_key=api_key, endpoint=config.endpoint, tenant_id=config.tenant_id)
 
 
 @click.command()
@@ -163,5 +149,26 @@ def push(config_path: str, endpoint: str | None, yes: bool) -> None:
             click.echo(click.style("    ✗ ", fg="yellow") + f)
 
     click.echo()
-    click.echo("  Dashboard: " + click.style("https://app.useagentmesh.com/dashboard", fg="cyan", underline=True))
+    click.echo("  Dashboard: " + click.style("https://app.getdrako.com/dashboard", fg="cyan", underline=True))
     click.echo()
+
+    # ---- Telemetry (fire-and-forget) ----
+    try:
+        from drako.telemetry import send_event
+        import hashlib
+
+        # Hash email domain if present in config
+        email = raw_config.get("contact", {}).get("email", "") if isinstance(raw_config.get("contact"), dict) else ""
+        domain_hash = None
+        if email and "@" in email:
+            domain = email.split("@")[1]
+            domain_hash = hashlib.sha256(domain.encode("utf-8")).hexdigest()[:16]
+
+        features = active if active else []
+        send_event("push_completed", {
+            "email_domain_hash": domain_hash,
+            "plan": raw_config.get("plan"),
+            "features_configured": features,
+        })
+    except Exception:
+        pass

@@ -17,14 +17,29 @@ class RES001(BasePolicy):
     category = "Resilience"
     severity = "HIGH"
     title = "No fallback defined for critical operations"
+    impact = "Critical operations without fallback paths fail permanently on transient errors, blocking business-critical workflows."
+    attack_scenario = "Payment tool fails due to gateway timeout. No fallback exists, so the payment is silently lost and never retried."
+    references = ["https://cwe.mitre.org/data/definitions/754.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
-        # Check for tools with side-effects that lack fallback/error recovery
-        critical_types = {"payment", "write", "execute"}
-        critical_tools = [
-            t for t in bom.tools
-            if getattr(t, "type", "read") in critical_types
-        ]
+        # Check for tools with side-effects that lack fallback/error recovery.
+        # A tool is "critical" if it has network, filesystem, or code execution
+        # access, or if its name suggests write/payment/execute semantics.
+        _CRITICAL_NAME_PATTERNS = {
+            "payment", "pay", "transfer", "write", "delete", "execute",
+            "send", "deploy", "remove", "update", "create", "submit",
+        }
+        critical_tools = []
+        for t in bom.tools:
+            is_critical = (
+                getattr(t, "has_network_access", False)
+                or getattr(t, "has_filesystem_access", False)
+                or getattr(t, "has_code_execution", False)
+                or any(pat in t.name.lower() for pat in _CRITICAL_NAME_PATTERNS)
+            )
+            if is_critical:
+                critical_tools.append(t)
 
         if not critical_tools:
             return []
@@ -44,7 +59,7 @@ class RES001(BasePolicy):
             "fallback", "failover", "retry_with", "backup_",
             "safe_default", "graceful_degradation",
         ]
-        for path, content in metadata.file_contents.items():
+        for path, content in metadata.source_files.items():
             for pat in fallback_patterns:
                 if pat in content.lower():
                     has_fallback_code = True
@@ -54,11 +69,7 @@ class RES001(BasePolicy):
             tool_names = ", ".join(
                 getattr(t, "name", "unknown")[:30] for t in critical_tools[:3]
             )
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     f"Critical tools ({tool_names}) have no fallback or error recovery path. "
                     "If circuit breaker trips or trust drops, the operation fails silently."
@@ -84,6 +95,10 @@ class RES002(BasePolicy):
     category = "Resilience"
     severity = "MEDIUM"
     title = "No state preservation on agent failure"
+    impact = "Without checkpointing, agent failures lose all accumulated progress — hours of work discarded on a single error."
+    attack_scenario = "Agent crashes after 3 hours of research. No state checkpoint exists, so the entire workflow must restart from zero."
+    references = ["https://cwe.mitre.org/data/definitions/754.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -96,7 +111,7 @@ class RES002(BasePolicy):
         ]
 
         has_state_preservation = False
-        for path, content in metadata.file_contents.items():
+        for path, content in metadata.source_files.items():
             for pat in state_patterns:
                 if pat in content:
                     has_state_preservation = True
@@ -112,11 +127,7 @@ class RES002(BasePolicy):
             has_state_preservation = True
 
         if not has_state_preservation:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     f"Project has {len(bom.agents)} agent(s) without state checkpointing. "
                     "If an agent fails mid-task, all progress is lost."

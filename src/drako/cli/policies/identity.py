@@ -55,6 +55,10 @@ class ID001(BasePolicy):
     category = "Identity"
     severity = "CRITICAL"
     title = "Static credentials in agent code"
+    impact = "Static credentials in agent code cannot be rotated or revoked per-agent, creating a single point of compromise."
+    attack_scenario = "One agent's hardcoded API key is leaked. Since all agents share the same key, the entire fleet is compromised."
+    references = ["https://cwe.mitre.org/data/definitions/798.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -67,11 +71,7 @@ class ID001(BasePolicy):
         if not _STATIC_CREDENTIAL_RE.search(all_content):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"Static credentials detected in agent code across "
                 f"{len(bom.agents)} agent(s). Hardcoded API keys, tokens, "
@@ -91,6 +91,10 @@ class ID002(BasePolicy):
     category = "Identity"
     severity = "HIGH"
     title = "No identity definition for agent"
+    impact = "Without identity definitions, agents cannot be uniquely authenticated, making access control and audit impossible."
+    attack_scenario = "Two agents use the same credentials. Audit log shows API calls but cannot distinguish which agent made them."
+    references = ["https://cwe.mitre.org/data/definitions/287.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -103,11 +107,7 @@ class ID002(BasePolicy):
         if _content_has_pattern(all_content, _IDENTITY_PATTERNS):
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"No identity definition detected across {len(bom.agents)} "
                 f"agent(s). Without identity configuration (credentials, "
@@ -127,6 +127,10 @@ class ID003(BasePolicy):
     category = "Identity"
     severity = "HIGH"
     title = "Shared credentials across agents"
+    impact = "Shared credentials prevent per-agent revocation — compromising one agent's key compromises all agents sharing it."
+    attack_scenario = "Security incident requires revoking one agent's access. Shared credentials mean all agents must be taken offline."
+    references = ["https://cwe.mitre.org/data/definitions/522.html"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents or len(bom.agents) < 2:
@@ -153,11 +157,7 @@ class ID003(BasePolicy):
         if not shared:
             return []
 
-        return [Finding(
-            policy_id=self.policy_id,
-            category=self.category,
-            severity=self.severity,
-            title=self.title,
+        return [self._finding(
             message=(
                 f"Credential variables appear to be shared across multiple "
                 f"files: {', '.join(shared[:5])}. Each agent should have "

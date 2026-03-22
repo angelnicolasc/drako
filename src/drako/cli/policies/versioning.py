@@ -17,6 +17,10 @@ class CV001(BasePolicy):
     category = "Context Versioning"
     severity = "HIGH"
     title = "No policy versioning configured"
+    impact = "Without policy versioning, you cannot trace which governance rules were active during a past incident or audit."
+    attack_scenario = "Regulator asks which safety policies were active when an incident occurred. Without versioning, you cannot answer."
+    references = ["https://artificialintelligenceact.eu/article/12/"]
+    remediation_effort = "moderate"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Check for .drako.yaml with platform connection
@@ -28,11 +32,7 @@ class CV001(BasePolicy):
 
         if not config_content:
             # No config file at all — always flag
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "No .drako.yaml found. Without platform connection, policy changes "
                     "are not versioned and audit logs cannot reference the active policy version. "
@@ -51,11 +51,7 @@ class CV001(BasePolicy):
         # Has config but no endpoint / api_key_env → offline only, no versioning
         has_endpoint = "endpoint:" in config_content or "api_key_env:" in config_content
         if not has_endpoint:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "Config exists but has no platform connection (missing endpoint/api_key_env). "
                     "Policy versions are not tracked. Run `drako push` to enable versioning."
@@ -63,7 +59,7 @@ class CV001(BasePolicy):
                 fix_snippet=(
                     "# Add to .drako.yaml:\n"
                     "api_key_env: DRAKO_API_KEY\n"
-                    "endpoint: https://api.useagentmesh.com\n\n"
+                    "endpoint: https://api.getdrako.com\n\n"
                     "# Then push:\n"
                     "drako push"
                 ),
@@ -78,6 +74,10 @@ class CV002(BasePolicy):
     category = "Context Versioning"
     severity = "MEDIUM"
     title = "Audit logs without policy version reference"
+    impact = "Audit entries without policy version references are useless for post-incident forensics and regulatory compliance."
+    attack_scenario = "Audit log shows a blocked action but doesn't reference which policy version caused the block. Investigation stalls."
+    references = ["https://artificialintelligenceact.eu/article/12/"]
+    remediation_effort = "trivial"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # This is an online-only check. For offline scan, we check if audit
@@ -95,11 +95,7 @@ class CV002(BasePolicy):
         has_connection = "api_key_env:" in config_content or "endpoint:" in config_content
 
         if has_audit and not has_connection:
-            return [Finding(
-                policy_id=self.policy_id,
-                category=self.category,
-                severity=self.severity,
-                title=self.title,
+            return [self._finding(
                 message=(
                     "Audit logging is configured but without platform connection. "
                     "Audit entries will not reference the active policy version, "
