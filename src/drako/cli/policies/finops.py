@@ -21,6 +21,7 @@ class FIN001(BasePolicy):
     attack_scenario = "Agent enters reasoning loop generating 2M tokens daily. Without cost tracking, the $5K/month spike goes unnoticed for weeks."
     references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:
@@ -129,6 +130,7 @@ class FIN003(BasePolicy):
     attack_scenario = "Agent repeatedly asks the same question during a session. Each call costs $0.05, totaling $500/month in duplicate queries."
     references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:

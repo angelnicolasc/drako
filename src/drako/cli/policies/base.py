@@ -27,6 +27,7 @@ class Finding:
     attack_scenario: str | None = None
     references: list[str] = field(default_factory=list)
     remediation_effort: str | None = None  # "trivial" | "moderate" | "significant"
+    finding_type: str = "vulnerability"    # "vulnerability" | "recommendation"
 
 
 class BasePolicy(ABC):
@@ -40,6 +41,7 @@ class BasePolicy(ABC):
     attack_scenario: str = ""
     references: list[str] = []
     remediation_effort: str = "moderate"  # "trivial" | "moderate" | "significant"
+    finding_type: str = "vulnerability"   # "vulnerability" | "recommendation"
 
     def _finding(self, message: str, **kwargs: object) -> Finding:
         """Create a Finding pre-filled with this policy's metadata."""
@@ -52,6 +54,7 @@ class BasePolicy(ABC):
             attack_scenario=self.attack_scenario,
             references=list(self.references),
             remediation_effort=self.remediation_effort,
+            finding_type=self.finding_type,
             message=message,
             **kwargs,
         )

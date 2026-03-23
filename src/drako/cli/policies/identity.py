@@ -59,6 +59,7 @@ class ID001(BasePolicy):
     attack_scenario = "One agent's hardcoded API key is leaked. Since all agents share the same key, the entire fleet is compromised."
     references = ["https://cwe.mitre.org/data/definitions/798.html"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -95,6 +96,7 @@ class ID002(BasePolicy):
     attack_scenario = "Two agents use the same credentials. Audit log shows API calls but cannot distinguish which agent made them."
     references = ["https://cwe.mitre.org/data/definitions/287.html"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -131,6 +133,7 @@ class ID003(BasePolicy):
     attack_scenario = "Security incident requires revoking one agent's access. Shared credentials mean all agents must be taken offline."
     references = ["https://cwe.mitre.org/data/definitions/522.html"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents or len(bom.agents) < 2:

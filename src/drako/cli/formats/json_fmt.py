@@ -49,6 +49,7 @@ def format_json(
                 "attack_scenario": f.attack_scenario,
                 "references": f.references,
                 "remediation_effort": f.remediation_effort,
+                "finding_type": getattr(f, "finding_type", "vulnerability"),
             }
             for f in result.findings
         ],

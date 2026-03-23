@@ -36,3 +36,4 @@ Thumbs.db
 # Drako
 .drako.yaml
 benchmarks/results/
+.hypothesis/

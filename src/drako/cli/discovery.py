@@ -66,6 +66,9 @@ _FRAMEWORK_PACKAGES: dict[str, str] = {
     "autogen": "autogen",
     "pyautogen": "autogen",
     "ag2": "autogen",
+    "autogen_agentchat": "autogen",
+    "autogen_core": "autogen",
+    "autogen_ext": "autogen",
     "langchain": "langchain",
     "langchain-core": "langchain",
     "langchain-community": "langchain",
@@ -84,6 +87,10 @@ _FRAMEWORK_IMPORTS: dict[str, str] = {
     "langgraph": "langgraph",
     "autogen": "autogen",
     "pyautogen": "autogen",
+    "autogen_agentchat": "autogen",
+    "autogen_core": "autogen",
+    "autogen_ext": "autogen",
+    "ag2": "autogen",
     "langchain": "langchain",
     "langchain_core": "langchain",
     "langchain_community": "langchain",
@@ -91,6 +98,9 @@ _FRAMEWORK_IMPORTS: dict[str, str] = {
     "pydantic_ai": "pydantic_ai",
     "semantic_kernel": "semantic_kernel",
 }
+
+# Dependency files worth searching in parent directories
+_DEP_FILES = ("requirements.txt", "pyproject.toml", "setup.py", "setup.cfg")
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +158,40 @@ def collect_project_files(directory: Path) -> ProjectMetadata:
             except OSError:
                 continue
 
+    # Extract Python code from Jupyter notebooks (.ipynb)
+    for nb_file in sorted(root.rglob("*.ipynb")):
+        rel_parts = nb_file.relative_to(root).parts
+        if _should_skip(rel_parts):
+            continue
+        if count > _MAX_FILES:
+            break
+        try:
+            import json as _json
+            nb_size = nb_file.stat().st_size
+            if nb_size > _MAX_FILE_SIZE * 5 or nb_size == 0:  # notebooks can be larger
+                continue
+            nb = _json.loads(nb_file.read_text(encoding="utf-8", errors="ignore"))
+            code_cells = []
+            for cell in nb.get("cells", []):
+                if cell.get("cell_type") != "code":
+                    continue
+                lines = []
+                for line in "".join(cell["source"]).split("\n"):
+                    stripped = line.lstrip()
+                    # Skip IPython magics (%, %%, !) that cause SyntaxError
+                    if stripped.startswith(("%", "!")):
+                        lines.append("")  # keep line count stable
+                    else:
+                        lines.append(line)
+                code_cells.append("\n".join(lines))
+            if code_cells:
+                content = "\n\n".join(code_cells)
+                rel_path = str(nb_file.relative_to(root)).replace("\\", "/") + ".py"
+                metadata.file_contents[rel_path] = content
+                count += 1
+        except (OSError, KeyError, ValueError, _json.JSONDecodeError):
+            continue
+
     # Also collect .yaml/.json agent config files (nested one level)
     for pattern in ("*.yaml", "*.yml", "*.json"):
         for f in sorted(root.glob(pattern)):
@@ -161,6 +205,36 @@ def collect_project_files(directory: Path) -> ProjectMetadata:
                     metadata.config_files[name] = content
             except OSError:
                 continue
+
+    # Check config/ subdirectory for CrewAI agent/task YAML configs
+    config_dir = root / "config"
+    if config_dir.is_dir():
+        for pattern in ("*.yaml", "*.yml"):
+            for f in sorted(config_dir.glob(pattern)):
+                name = f.name
+                if name not in metadata.config_files:
+                    try:
+                        content = f.read_text(encoding="utf-8", errors="ignore")
+                        metadata.config_files[name] = content
+                    except OSError:
+                        continue
+
+    # Walk up to 3 parent directories for dependency files if none found locally
+    has_dep_file = any(name in metadata.config_files for name in _DEP_FILES)
+    if not has_dep_file:
+        for parent in list(root.parents)[:3]:
+            for cfg_name in _DEP_FILES:
+                cfg_path = parent / cfg_name
+                if cfg_path.exists():
+                    try:
+                        size = cfg_path.stat().st_size
+                        if 0 < size < _MAX_FILE_SIZE:
+                            content = cfg_path.read_text(encoding="utf-8", errors="ignore")
+                            metadata.config_files[cfg_name] = content
+                    except OSError:
+                        continue
+            if any(name in metadata.config_files for name in _DEP_FILES):
+                break
 
     # Parse dependencies
     metadata.dependencies = _extract_dependencies(metadata.config_files)

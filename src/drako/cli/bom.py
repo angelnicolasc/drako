@@ -455,6 +455,40 @@ def _detect_permissions(tools: list[DetectedTool], file_contents: dict[str, str]
 
 
 # ---------------------------------------------------------------------------
+# YAML-based agent extraction (CrewAI @CrewBase pattern)
+# ---------------------------------------------------------------------------
+
+def _extract_agents_from_yaml(metadata: ProjectMetadata) -> list[DetectedAgent]:
+    """Extract agents defined in CrewAI YAML config files (agents.yaml)."""
+    agents: list[DetectedAgent] = []
+    for name, content in metadata.config_files.items():
+        if name not in ("agents.yaml", "agents.yml"):
+            continue
+        try:
+            import yaml  # type: ignore[import-untyped]
+            data = yaml.safe_load(content)
+            if not isinstance(data, dict):
+                continue
+            for agent_key, agent_def in data.items():
+                if not isinstance(agent_def, dict):
+                    continue
+                tools_raw = agent_def.get("tools", [])
+                tools = tools_raw if isinstance(tools_raw, list) else []
+                agents.append(DetectedAgent(
+                    name=agent_def.get("role", agent_key),
+                    class_name="Agent",
+                    file_path=name,
+                    line_number=0,
+                    framework="crewai",
+                    model=agent_def.get("llm"),
+                    tools=[str(t) for t in tools],
+                ))
+        except Exception:
+            continue
+    return agents
+
+
+# ---------------------------------------------------------------------------
 # Main BOM generation
 # ---------------------------------------------------------------------------
 
@@ -494,6 +528,13 @@ def generate_bom(metadata: ProjectMetadata) -> AgentBOM:
 
         # Prompts
         all_prompts.extend(_extract_prompts_ast(rel_path, content))
+
+    # Agents from YAML config files (CrewAI @CrewBase pattern)
+    for yaml_agent in _extract_agents_from_yaml(metadata):
+        key = f"{yaml_agent.name}:{yaml_agent.file_path}"
+        if key not in seen_agents:
+            seen_agents.add(key)
+            all_agents.append(yaml_agent)
 
     # MCP servers
     mcp_servers = _detect_mcp_servers(metadata)

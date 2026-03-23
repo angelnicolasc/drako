@@ -105,6 +105,10 @@ class MULTI002(BasePolicy):
         agent_names = {a.name.lower() for a in bom.agents}
         adjacency: dict[str, set[str]] = defaultdict(set)
 
+        # Constructors that group agents (not delegation)
+        _constructor_names = {"Crew", "Task", "Agent", "Pipeline", "GroupChat",
+                              "RoundRobinGroupChat", "SelectorGroupChat"}
+
         for rel_path, content in metadata.file_contents.items():
             if not rel_path.endswith(".py"):
                 continue
@@ -115,6 +119,15 @@ class MULTI002(BasePolicy):
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
+                    # Skip constructor calls — agents in same Crew/Task is not delegation
+                    func_name = None
+                    if isinstance(node.func, ast.Name):
+                        func_name = node.func.id
+                    elif isinstance(node.func, ast.Attribute):
+                        func_name = node.func.attr
+                    if func_name in _constructor_names:
+                        continue
+
                     call_str = ast.dump(node)
                     for name_a in agent_names:
                         if name_a in call_str.lower():

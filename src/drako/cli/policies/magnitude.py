@@ -67,6 +67,7 @@ class MAG001(BasePolicy):
     attack_scenario = "Agent enters infinite reasoning loop. Without max_spend, it consumes 5M tokens ($2,500) in a single session overnight."
     references = ["https://cwe.mitre.org/data/definitions/770.html"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -102,6 +103,7 @@ class MAG002(BasePolicy):
     attack_scenario = "Agent retries a failing API call without backoff. 10,000 requests/minute overwhelm the service, causing outage for all users."
     references = ["https://cwe.mitre.org/data/definitions/770.html"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:

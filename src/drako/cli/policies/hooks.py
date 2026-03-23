@@ -21,6 +21,7 @@ class HOOK001(BasePolicy):
     attack_scenario = "Agent executes SQL DELETE without any pre-action hook to check for dangerous keywords. Data is permanently lost."
     references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.tools:

@@ -4,6 +4,22 @@ All notable changes to Drako are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [2.2.1] - 2026-03-23
+
+### Fixed
+- Framework detection for LangGraph/AutoGen in subdirectories (parent directory walk-up)
+- AutoGen new package names support (`autogen_agentchat`, `autogen_core`, `ag2`)
+- Jupyter notebook `.ipynb` scanning with IPython magic line stripping
+- CrewAI `@CrewBase` pattern: agent extraction from YAML config files
+- Unconditional exit code 1 on critical findings removed (only with `--threshold-det`)
+- MULTI-002 false positive on constructor calls (Crew, Task, Agent)
+
+### Added
+- Finding type classification: `vulnerability` vs `recommendation`
+- Terminal report split into FINDINGS and RECOMMENDATIONS sections
+- Recommendations excluded from governance score
+- `finding_type` field in JSON and SARIF output formats
+
 ## [2.2.0] - 2026-03-22
 
 ### Added

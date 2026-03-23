@@ -21,6 +21,7 @@ class CV001(BasePolicy):
     attack_scenario = "Regulator asks which safety policies were active when an incident occurred. Without versioning, you cannot answer."
     references = ["https://artificialintelligenceact.eu/article/12/"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Check for .drako.yaml with platform connection

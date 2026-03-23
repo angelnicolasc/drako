@@ -61,6 +61,7 @@ def format_sarif(
                 rule_entry["properties"]["attack_scenario"] = finding.attack_scenario
             if finding.remediation_effort:
                 rule_entry["properties"]["remediation_effort"] = finding.remediation_effort
+            rule_entry["properties"]["finding_type"] = getattr(finding, "finding_type", "vulnerability")
 
             # Add advisory references if available
             matched = result.matched_advisories.get(finding.policy_id, [])

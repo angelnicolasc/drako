@@ -46,8 +46,14 @@ _CATEGORY_CAPS: dict[str, int] = {
 def calculate_score(findings: list[Finding]) -> int:
     """Calculate governance score from findings.
 
+    Only vulnerability findings affect the score. Recommendations are
+    shown separately and do not lower the governance score.
+
     Returns an integer 0-100.
     """
+    # Filter out recommendations — only vulnerabilities affect the score
+    findings = [f for f in findings if getattr(f, "finding_type", "vulnerability") == "vulnerability"]
+
     # If no category caps apply, use the fast path (existing behaviour)
     capped_categories = {
         f.category for f in findings if f.category in _CATEGORY_CAPS

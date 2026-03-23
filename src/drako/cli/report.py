@@ -65,6 +65,72 @@ def _render_score_bar(score: int) -> str:
 # Main render function
 # ---------------------------------------------------------------------------
 
+def _render_findings_section(
+    console: Console,
+    findings: list[Finding],
+    details: bool = False,
+) -> None:
+    """Render a group of findings organized by severity."""
+    findings_by_severity: dict[str, list[Finding]] = {}
+    for f in findings:
+        findings_by_severity.setdefault(f.severity, []).append(f)
+
+    for severity in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+        items = findings_by_severity.get(severity, [])
+        if not items:
+            continue
+
+        color = _SEVERITY_COLORS.get(severity, "white")
+        emoji = _SEVERITY_EMOJI.get(severity, "\u2022")
+
+        console.print(
+            f"{emoji} [bold {color}]{severity}[/bold {color}] ({len(items)} finding{'s' if len(items) != 1 else ''})",
+        )
+        console.print()
+
+        for f in items:
+            location = ""
+            if f.file_path:
+                location = f"  File: {f.file_path}"
+                if f.line_number:
+                    location += f":{f.line_number}"
+
+            finding_text = Text()
+            finding_text.append(f"{f.policy_id}", style=f"bold {color}")
+            finding_text.append(f" \u2502 {f.title}\n", style="bold")
+            finding_text.append(f"  {f.message}\n", style="white")
+            if location:
+                finding_text.append(f"{location}\n", style="dim")
+
+            if f.code_snippet:
+                finding_text.append(f"  Found: ", style="dim")
+                finding_text.append(f"{f.code_snippet}\n", style="dim italic")
+
+            console.print(finding_text, end="")
+
+            if details:
+                if f.impact:
+                    console.print(f"  [bold]Impact:[/bold] {f.impact}")
+                if f.attack_scenario:
+                    console.print(f"  [dim italic]Attack: {f.attack_scenario}[/dim italic]")
+                effort_str = f.remediation_effort or "unknown"
+                refs_str = ", ".join(f.references) if f.references else "none"
+                console.print(f"  [dim]Fix effort: {effort_str} \u2502 Refs: {refs_str}[/dim]")
+                console.print()
+
+            if f.fix_snippet:
+                console.print(f"  [bold green]Fix:[/bold green]")
+                console.print(Syntax(
+                    f.fix_snippet,
+                    "python",
+                    theme="monokai",
+                    line_numbers=False,
+                    padding=1,
+                ))
+
+            console.print()
+
+
 def render_report(
     bom: AgentBOM,
     findings: list[Finding],
@@ -187,83 +253,42 @@ def render_report(
             console.print(f"\U0001f517 Tool Reachability: " + " \u2502 ".join(r_parts))
             console.print()
 
-    # ---- Findings by Severity ----
-    findings_by_severity: dict[str, list[Finding]] = {}
-    for f in findings:
-        findings_by_severity.setdefault(f.severity, []).append(f)
+    # ---- Split findings into vulnerabilities and recommendations ----
+    vuln_findings = [f for f in findings if getattr(f, "finding_type", "vulnerability") == "vulnerability"]
+    rec_findings = [f for f in findings if getattr(f, "finding_type", "vulnerability") == "recommendation"]
 
-    for severity in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-        items = findings_by_severity.get(severity, [])
-        if not items:
-            continue
-
-        color = _SEVERITY_COLORS.get(severity, "white")
-        emoji = _SEVERITY_EMOJI.get(severity, "\u2022")
-
-        console.print(
-            f"{emoji} [bold {color}]{severity}[/bold {color}] ({len(items)} finding{'s' if len(items) != 1 else ''})",
-        )
+    # ---- Vulnerabilities by Severity ----
+    if vuln_findings:
+        console.print(f"[bold]\u26a0\ufe0f  FINDINGS ({len(vuln_findings)}):[/bold]")
         console.print()
+        _render_findings_section(console, vuln_findings, details)
 
-        for f in items:
-            # Finding header
-            location = ""
-            if f.file_path:
-                location = f"  File: {f.file_path}"
-                if f.line_number:
-                    location += f":{f.line_number}"
-
-            finding_text = Text()
-            finding_text.append(f"{f.policy_id}", style=f"bold {color}")
-            finding_text.append(f" \u2502 {f.title}\n", style="bold")
-            finding_text.append(f"  {f.message}\n", style="white")
-            if location:
-                finding_text.append(f"{location}\n", style="dim")
-
-            if f.code_snippet:
-                finding_text.append(f"  Found: ", style="dim")
-                finding_text.append(f"{f.code_snippet}\n", style="dim italic")
-
-            console.print(finding_text, end="")
-
-            if details:
-                if f.impact:
-                    console.print(f"  [bold]Impact:[/bold] {f.impact}")
-                if f.attack_scenario:
-                    console.print(f"  [dim italic]Attack: {f.attack_scenario}[/dim italic]")
-                effort_str = f.remediation_effort or "unknown"
-                refs_str = ", ".join(f.references) if f.references else "none"
-                console.print(f"  [dim]Fix effort: {effort_str} \u2502 Refs: {refs_str}[/dim]")
-                console.print()
-
-            if f.fix_snippet:
-                console.print(f"  [bold green]Fix:[/bold green]")
-                console.print(Syntax(
-                    f.fix_snippet,
-                    "python",
-                    theme="monokai",
-                    line_numbers=False,
-                    padding=1,
-                ))
-
-            console.print()
+    # ---- Recommendations by Severity ----
+    if rec_findings:
+        console.print(f"[bold]\U0001f4a1 RECOMMENDATIONS ({len(rec_findings)}):[/bold]")
+        console.print()
+        _render_findings_section(console, rec_findings, details)
 
     # ---- Summary ----
-    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-    for f in findings:
-        if f.severity in counts:
-            counts[f.severity] += 1
+    vuln_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    for f in vuln_findings:
+        if f.severity in vuln_counts:
+            vuln_counts[f.severity] += 1
 
     summary_parts = []
     for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-        if counts[sev] > 0:
+        if vuln_counts[sev] > 0:
             color = _SEVERITY_COLORS[sev]
-            summary_parts.append(f"[{color}]{counts[sev]} {sev.lower()}[/{color}]")
+            summary_parts.append(f"[{color}]{vuln_counts[sev]} {sev.lower()}[/{color}]")
 
     if summary_parts:
         console.print(f"\U0001f4c8 Summary: " + " \u2502 ".join(summary_parts))
-    else:
+        if rec_findings:
+            console.print(f"   [dim]{len(rec_findings)} recommendation{'s' if len(rec_findings) != 1 else ''} (do not affect score)[/dim]")
+    elif not rec_findings:
         console.print("\u2705 [green]No findings! Your project has excellent governance.[/green]")
+    else:
+        console.print(f"\u2705 [green]No vulnerabilities found![/green] {len(rec_findings)} recommendation{'s' if len(rec_findings) != 1 else ''} available.")
 
     if baselined_count > 0 or resolved_count > 0:
         parts = []
@@ -275,9 +300,9 @@ def render_report(
         console.print(f"   Baseline: {sep.join(parts)} (use --show-all to see all)")
 
     # Improvement hint
-    if score < 80 and counts["CRITICAL"] > 0:
-        potential = min(100, score + counts["CRITICAL"] * 15)
-        console.print(f"   Fix the {counts['CRITICAL']} critical issue{'s' if counts['CRITICAL'] != 1 else ''} to reach score {potential}+")
+    if score < 80 and vuln_counts["CRITICAL"] > 0:
+        potential = min(100, score + vuln_counts["CRITICAL"] * 15)
+        console.print(f"   Fix the {vuln_counts['CRITICAL']} critical issue{'s' if vuln_counts['CRITICAL'] != 1 else ''} to reach score {potential}+")
 
     console.print()
 

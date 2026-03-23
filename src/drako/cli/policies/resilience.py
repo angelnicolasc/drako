@@ -21,6 +21,7 @@ class RES001(BasePolicy):
     attack_scenario = "Payment tool fails due to gateway timeout. No fallback exists, so the payment is silently lost and never retried."
     references = ["https://cwe.mitre.org/data/definitions/754.html"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # Check for tools with side-effects that lack fallback/error recovery.
@@ -99,6 +100,7 @@ class RES002(BasePolicy):
     attack_scenario = "Agent crashes after 3 hours of research. No state checkpoint exists, so the entire workflow must restart from zero."
     references = ["https://cwe.mitre.org/data/definitions/754.html"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:

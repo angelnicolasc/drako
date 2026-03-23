@@ -85,6 +85,7 @@ class ODD001(BasePolicy):
     attack_scenario = "Agent given broad tool access autonomously accesses production database and deletes records outside its intended scope."
     references = ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
     remediation_effort = "moderate"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         # ODD requires the Drako platform — offline scan ALWAYS fires
@@ -163,6 +164,7 @@ class ODD003(BasePolicy):
     attack_scenario = "Agent enters a reasoning loop, generating 500K tokens. Without spend cap, the session costs $2,000 before detection."
     references = ["https://cwe.mitre.org/data/definitions/770.html"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:
@@ -199,6 +201,7 @@ class ODD004(BasePolicy):
     attack_scenario = "Agent stuck in a retry loop runs for 8 hours overnight. Without max_iterations, nobody notices until morning."
     references = ["https://cwe.mitre.org/data/definitions/835.html"]
     remediation_effort = "trivial"
+    finding_type = "recommendation"
 
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         if not bom.agents:

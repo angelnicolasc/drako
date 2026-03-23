@@ -267,14 +267,9 @@ def scan(
     except Exception:
         pass  # Telemetry must never affect scan
 
-    # ---- Exit code based on findings ----
-    # Exit code is based on display_findings (new only), not all findings.
-    # Score always reflects ALL findings (baselined + new).
-    critical_count = sum(1 for f in display_findings if f.severity == "CRITICAL")
-    if critical_count > 0:
-        sys.exit(1)
-
-    # ---- Determinism threshold gate ----
+    # ---- Exit code based on explicit CI gating flags ----
+    # Without --fail-on or --threshold flags, always exit 0 (scan succeeded).
+    # Determinism threshold gate
     if threshold_det > 0 and result.determinism_score < threshold_det:
         click.secho(
             f"  [gate]  Determinism score {result.determinism_score} "
