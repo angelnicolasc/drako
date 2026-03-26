@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from drako.cli.push_command import _load_client
+from drako.cli._helpers import load_client_safe
 
 
 @click.command()
@@ -12,9 +12,7 @@ from drako.cli.push_command import _load_client
 @click.option("--limit", "-n", default=20, help="Number of versions to show")
 def history(config_path: str | None, limit: int) -> None:
     """Show policy version history."""
-    client = _load_client(config_path)
-    if not client:
-        return
+    client = load_client_safe(config_path)
 
     try:
         resp = client._request_sync(

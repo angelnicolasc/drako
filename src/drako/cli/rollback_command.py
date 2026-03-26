@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import click
 
-from drako.cli.push_command import _load_client
+from drako.cli._helpers import load_client_safe, parse_version
 
 
 @click.command()
-@click.argument("version", type=int)
+@click.argument("version", type=str)
 @click.option("--config", "-c", "config_path", default=None, help="Path to .drako.yaml")
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation")
-def rollback(version: int, config_path: str | None, yes: bool) -> None:
+def rollback(version: str, config_path: str | None, yes: bool) -> None:
     """Rollback to a previous policy version (requires Pro)."""
-    client = _load_client(config_path)
-    if not client:
-        return
+    version = parse_version(version)
+    client = load_client_safe(config_path)
 
     if not yes:
         click.echo(f"Rolling back to v{version}...")

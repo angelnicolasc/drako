@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import click
 
-from drako.cli.push_command import _load_client
+from drako.cli._helpers import load_client_safe, parse_version
 
 
 @click.command()
-@click.argument("from_version", type=int)
-@click.argument("to_version", type=int)
+@click.argument("from_version", type=str)
+@click.argument("to_version", type=str)
 @click.option("--config", "-c", "config_path", default=None, help="Path to .drako.yaml")
-def diff(from_version: int, to_version: int, config_path: str | None) -> None:
+def diff(from_version: str, to_version: str, config_path: str | None) -> None:
     """Compare two policy versions (requires Pro)."""
-    client = _load_client(config_path)
-    if not client:
-        return
+    from_version = parse_version(from_version)
+    to_version = parse_version(to_version)
+    client = load_client_safe(config_path)
 
     try:
         resp = client._request_sync(

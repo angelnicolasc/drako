@@ -78,6 +78,18 @@ import click
     default=0,
     help="Minimum determinism score (exit 1 if below). For CI gating.",
 )
+@click.option(
+    "--fail-on",
+    "fail_on",
+    type=click.Choice(["critical", "high", "medium", "low"], case_sensitive=False),
+    default=None,
+    help="Exit code 1 if any finding at this severity or above (for CI gating)",
+)
+@click.option(
+    "--diff", "diff_ref",
+    default=None,
+    help="Only scan files changed since a git ref (e.g., HEAD~1, origin/main)",
+)
 def scan(
     directory: str,
     output_format: str,
@@ -92,6 +104,8 @@ def scan(
     benchmark: bool,
     determinism: bool,
     threshold_det: int,
+    fail_on: str | None,
+    diff_ref: str | None,
 ) -> None:
     """Scan your AI agent project for governance and compliance gaps.
 
@@ -110,6 +124,63 @@ def scan(
 
     # ---- Run offline scan ----
     result = run_scan(directory, framework_filter=framework_filter)
+
+    # ---- Early exit for non-agent projects (terminal only) ----
+    if (
+        output_format == "terminal"
+        and not result.bom.agents
+        and not result.bom.tools
+        and not result.bom.frameworks
+    ):
+        click.echo()
+        click.secho("  No AI agent components detected in this project.", fg="yellow")
+        click.echo()
+        click.echo("  Drako scans projects using: CrewAI, LangGraph, AutoGen,")
+        click.echo("  Semantic Kernel, PydanticAI, LlamaIndex, LangChain.")
+        click.echo()
+        click.echo("  If your agents are in a subdirectory, try:")
+        click.echo("     " + click.style("drako scan path/to/agent-module/", fg="cyan"))
+        click.echo()
+        sys.exit(0)
+
+    # ---- Diff filter (only show findings from changed files) ----
+    if diff_ref:
+        import subprocess
+        try:
+            git_result = subprocess.run(
+                ["git", "diff", "--name-only", diff_ref],
+                capture_output=True, text=True, cwd=directory, timeout=10,
+            )
+            if git_result.returncode != 0:
+                click.secho(
+                    f"  [error]  git diff failed: {git_result.stderr.strip()}",
+                    fg="red",
+                )
+                sys.exit(1)
+            changed_files = {
+                f.strip().replace("\\", "/")
+                for f in git_result.stdout.splitlines()
+                if f.strip()
+            }
+            if not changed_files:
+                click.echo("  No files changed since " + diff_ref + ". Nothing to scan.")
+                sys.exit(0)
+            # Filter findings: keep only those whose file_path matches a changed file
+            result.findings = [
+                f for f in result.findings
+                if not f.file_path or f.file_path.replace("\\", "/") in changed_files
+            ]
+            if output_format == "terminal":
+                click.echo(
+                    click.style("  [diff]   ", fg="green")
+                    + f"Filtered to {len(changed_files)} changed file(s) since {diff_ref}"
+                )
+        except FileNotFoundError:
+            click.secho("  [error]  git not found. --diff requires git.", fg="red")
+            sys.exit(1)
+        except subprocess.TimeoutExpired:
+            click.secho("  [error]  git diff timed out.", fg="red")
+            sys.exit(1)
 
     # ---- Determinism filter ----
     if determinism:
@@ -267,13 +338,43 @@ def scan(
     except Exception:
         pass  # Telemetry must never affect scan
 
-    # ---- Exit code based on explicit CI gating flags ----
-    # Without --fail-on or --threshold flags, always exit 0 (scan succeeded).
+    # ---- Exit code based on CI gating ----
+    _SEVERITY_ORDER = ["low", "medium", "high", "critical"]
+
+    if fail_on:
+        threshold_idx = _SEVERITY_ORDER.index(fail_on.lower())
+        failing = [
+            f for f in result.findings
+            if f.severity.lower() in _SEVERITY_ORDER
+            and _SEVERITY_ORDER.index(f.severity.lower()) >= threshold_idx
+        ]
+        if failing:
+            click.secho(
+                f"\n  [gate]  {len(failing)} finding(s) at {fail_on.upper()} or above",
+                fg="red", err=True,
+            )
+            for f in failing[:5]:
+                click.secho(f"          {f.policy_id}: {f.title}", fg="red", err=True)
+            if len(failing) > 5:
+                click.secho(f"          ... and {len(failing) - 5} more", fg="red", err=True)
+            sys.exit(1)
+
     # Determinism threshold gate
     if threshold_det > 0 and result.determinism_score < threshold_det:
         click.secho(
             f"  [gate]  Determinism score {result.determinism_score} "
             f"below threshold {threshold_det}",
             fg="red",
+            err=True,
+        )
+        sys.exit(1)
+
+    # CRITICAL findings gate — always exit 1 if any CRITICAL finding exists
+    critical_count = sum(1 for f in result.findings if f.severity == "CRITICAL")
+    if critical_count > 0:
+        click.secho(
+            f"  [gate]  {critical_count} CRITICAL finding(s) detected",
+            fg="red",
+            err=True,
         )
         sys.exit(1)
