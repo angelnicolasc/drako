@@ -1,372 +1,133 @@
 # Runtime Capabilities
 
-Drako has two enforcement modes: **Scan CLI** (free, offline, no account) and **Runtime Platform** (requires a Drako account). This document covers the full capability set for both.
+> The scan tells you what's wrong. The platform fixes it — and keeps it fixed.
+
+Drako's runtime sits between your agents and the world. Every tool call, every inter-agent message, every action passes through an enforcement pipeline before it executes. No agent bypasses it. No exception.
 
 ---
 
-## Capability Overview
+## Enforcement Pipeline
 
-### Scan CLI — Free, Offline, No Account Required
+When an agent decides to act, the decision travels through this chain. Any step can block, modify, or escalate — before a single byte reaches your downstream APIs.
 
-| Capability | Status | Details |
-|---|---|---|
-| Governance Score | ✅ | 80 rules across 16 categories. Deterministic — same code, same result every time. |
-| Determinism Score | ✅ | Separate score for non-deterministic patterns (temperature, seed, timeouts). |
-| Agent BOM | ✅ | AST-based discovery of agents, tools, models, MCP servers, prompts. 7 frameworks. |
-| Reachability Analysis | ✅ | Separates findings by whether the vulnerable code is actually reachable. |
-| EU AI Act Gap Detection | ✅ | Art. 9, 11, 12, 14 compliance checks with fix snippets. |
-| Advisory Matching | ✅ | Maps findings to 25 DRAKO-ABSS advisories (OWASP, MITRE ATLAS, real CVEs). |
-| SARIF 2.1.0 Export | ✅ | GitHub Code Scanning compatible. Uploads to Security tab. |
-| SVG Badge | ✅ | Embeddable governance score badge. |
-| Benchmark Comparison | ✅ | `--benchmark` compares your score against 100 scanned open-source projects. |
-| Baseline Mode | ✅ | `--baseline` saves known findings. CI only reports new ones. |
-| Auto-fix Preview | ✅ | `drako fix --dry-run` previews what Drako can fix automatically. |
-
-### Runtime Platform — Requires Account
-
-| Capability | Status | Details |
-|---|---|---|
-| Policy Enforcement | ✅ Production | Real-time evaluation on every tool call before execution. |
-| DLP / PII Detection | ✅ Production | Presidio-based scanning. 8+ entity types. Blocks or logs. |
-| Human-in-the-Loop (HITL) | ✅ Production | Agent pauses, escalates to human. Configurable triggers. |
-| Circuit Breaker | ✅ Production | Per-agent AND per-tool. State machine with EigenTrust scoring. |
-| Audit Trail | ✅ Production | SHA-256/BLAKE3 hash chain + Ed25519 signatures. Tamper-evident. |
-| Trust Score | ✅ Production | 0–100 dynamic score per agent, decays over time. |
-| ODD Enforcement | ✅ Production | Blocks tool calls outside each agent's Operator-Defined Domain. |
-| Magnitude Limits | ✅ Production | Caps spend and record access per action and per session. |
-| Intent Fingerprinting | ✅ Production | Anti-replay tokens for high-risk tool calls. |
-| Agentic FinOps | ✅ Production | Cost tracking, model routing, semantic caching, budget alerts. |
-| Programmable Hooks | ✅ Production | Pre/post action scripts at governance checkpoints. |
-| Deterministic Fallback | ✅ Production | Configurable fallback when tools fail or circuit breaks open. |
-| Secure A2A | ✅ Production | DID-based authentication for inter-agent communication. |
-| Topology Monitoring | ✅ Production | Detects circular deps, resource contention, cascade amplification. |
-| Chaos Engineering | ✅ Production | Inject controlled faults to test fallback and recovery. |
-| Observability | 🔜 Next Sprint | OTEL export with semantic conventions for agent telemetry. |
-| SIEM Export | 🔜 Next Sprint | Audit trail export to Splunk, Datadog, Elastic. |
-| Alerting | 🔜 Next Sprint | Webhook + email alerts for governance events. |
-
----
-
-## Runtime Integration
-
-### SDK — In-Process (Recommended)
-
-Wraps your agent framework with a middleware that intercepts every tool call:
-
-```python
-from drako import govern
-
-# One line — every tool call goes through governance
-crew = govern(crew)
-result = crew.kickoff()
 ```
-
-Framework-specific helpers:
-
-```python
-from drako import with_compliance             # CrewAI
-from drako import with_langgraph_compliance   # LangGraph
-from drako import with_autogen_compliance     # AutoGen
-```
-
-### Proxy — Out-of-Process (Zero Code Changes)
-
-Routes all LLM API calls through a local governance proxy:
-
-```bash
-drako proxy start
-export OPENAI_BASE_URL=http://localhost:8990/openai/v1
-```
-
-See [Proxy Mode →](proxy-mode.md) for full proxy documentation.
-
-| | SDK | Proxy |
-|---|---|---|
-| Code changes required | One line | None |
-| HITL callbacks | Built-in | Manual implementation |
-| Intent verification | ✅ | ❌ |
-| Persistent audit trail | ✅ (cloud) | In-memory only |
-| Multi-process support | Per-process | Shared across processes |
-| Framework-specific rules | ✅ | ❌ |
-
----
-
-## Capability Details
-
-### Policy Enforcement
-
-Every tool call passes through a 13-stage evaluation pipeline before executing:
-
-1. Agent identity verification
-2. ODD boundary check (permitted/forbidden tools)
-3. Trust score evaluation
-4. Magnitude limit check (spend, record count, rate)
-5. DLP scan (inputs)
-6. Intent verification (anti-replay)
-7. HITL checkpoint (if triggered)
-8. Hook execution (pre-action scripts)
-9. Tool execution
-10. DLP scan (outputs)
-11. Cost tracking
-12. Audit logging
-13. Hook execution (post-action scripts)
-
-If any enforcement-mode check fails, the tool call is blocked and logged. Audit-mode checks log without blocking.
-
----
-
-### DLP / PII Detection
-
-Presidio-based scanning detects PII and PCI data in tool inputs and outputs.
-
-**Supported entity types:**
-- SSN (Social Security Number)
-- Credit card numbers (all major formats)
-- Email addresses
-- Phone numbers
-- Passport numbers
-- IP addresses
-- Driver's license numbers
-- Bank account numbers
-
-**Configuration:**
-
-```yaml
-policies:
-  dlp:
-    mode: enforce       # audit | enforce | off
-    sensitivity: high   # low | medium | high
-```
-
-`audit` — logs detections, allows the call
-`enforce` — blocks the call before it reaches the tool
-
----
-
-### Human-in-the-Loop (HITL)
-
-When a tool call matches a HITL trigger, the agent execution pauses and waits for human approval.
-
-**Trigger conditions:**
-- Tool type (`write`, `execute`, `payment`, `network`)
-- Specific tool name
-- Trust score below threshold
-- Session spend above threshold
-- Records accessed above threshold
-- First-time tool use
-- First-time action in a new session
-
-**Approval flow:**
-1. Agent reaches a HITL trigger
-2. Governance middleware pauses the agent
-3. Notification sent (webhook/email if configured)
-4. Human approves or rejects via the Drako dashboard or API
-5. Agent resumes (approved) or receives a rejection error (rejected)
-
-**Timeout behavior:**
-- `timeout_action: reject` — defaults to blocking if no response (safe for production)
-- `timeout_action: allow` — defaults to allowing if no response (permissive, for dev)
-
----
-
-### Circuit Breaker
-
-Per-agent fault isolation. Prevents one failing tool from cascading failures.
-
-**States:** `CLOSED` → `OPEN` → `HALF-OPEN` → `CLOSED`
-
-- **CLOSED:** Normal operation. Failures counted within the time window.
-- **OPEN:** Failures exceeded threshold. All calls to this agent/tool are blocked immediately.
-- **HALF-OPEN:** After recovery timeout. One trial call allowed to test recovery.
-
-**EigenTrust scoring:** The circuit breaker uses trust propagation to detect systemic failures across multi-agent networks, not just isolated tool failures.
-
-```yaml
-policies:
-  circuit_breaker:
-    agent_level:
-      failure_threshold: 5
-      time_window_seconds: 60
-      recovery_timeout_seconds: 30
+Agent decides to act
+  │
+  ├─ Pre-action Hooks ─── custom validation scripts
+  ├─ Identity Check ───── is this agent who it claims to be?
+  ├─ ODD Check ────────── is this tool permitted for this agent?
+  ├─ Magnitude Check ──── does this exceed spend/volume/scope limits?
+  ├─ HITL Check ───────── does this need human approval?
+  ├─ Intent Gate 1 ────── fingerprint the decision (SHA-256 + Ed25519)
+  ├─ DLP Scan ─────────── does the payload contain PII/PCI?
+  ├─ Injection Scan ───── does the input contain prompt injection?
+  ├─ Trust Check ──────── is this agent's reputation sufficient?
+  ├─ IOC Check ────────── does this match a known threat pattern?
+  ├─ Circuit Breaker ──── is this tool/agent healthy enough?
+  ├─ Intent Gate 2 ────── verify the decision wasn't altered since Gate 1
+  │
+  ▼
+  Execute (or block with reason)
+  │
+  ├─ Post-action Hooks ── validate/modify result
+  ├─ Topology Tracker ─── log interaction for multi-agent graph
+  ├─ Cost Tracker ─────── record tokens, cost, model used
+  └─ Audit Trail ──────── SHA-256 hash chain + policy snapshot ID
 ```
 
 ---
 
-### Audit Trail
+## Capabilities
 
-Every tool call, policy decision, and governance event is logged to a tamper-evident hash chain.
+### 🔒 Security & Trust
 
-**Standard audit:** Each entry is JSON with timestamp, agent ID, tool name, decision, and cost.
+**DLP (Data Loss Prevention)**
+Presidio-based PII/PCI detection runs on every tool call payload. If the payload contains critical PII, the action is rejected before it reaches any downstream API.
 
-**Cryptographic audit (`cryptographic: true`):**
-- SHA-256 (or BLAKE3 for higher performance) hash chain — each entry links to the previous
-- Ed25519 digital signatures — entries are signed with a per-tenant key
-- Policy snapshot reference — each audit entry references the `.drako.yaml` version that was active
+**Prompt Injection Detection**
+Bidirectional scanning: catches injection attempts in external data reaching your agents — documents, API responses, tool results. Five deterministic pattern categories. No LLM involved. Complements DLP, which scans outputs.
 
-Verify integrity at any time:
+**Agent Identity**
+Managed credential lifecycle per agent: dynamic provisioning, automatic rotation with grace periods, and instant revocation. DID-based. No more shared static API keys spread across agents.
 
-```bash
-drako verify                    # Check hash chain integrity
-drako verify --from 2026-01-01  # Verify a specific time range
-```
+**Trust Score**
+Per-agent EigenTrust reputation score (0–100), updated on every interaction and time-decayed. Agents earn or lose trust based on actual behavior — not just configuration.
 
----
+**Intent Fingerprinting**
+Two-gate cryptographic verification (SHA-256 + Ed25519). Gate 1 fingerprints the decision at the moment it's made. Gate 2 verifies nothing changed before execution. If a hallucination or injection alters the action in between — it's blocked. Every verification produces SOC 2-ready audit proof.
 
-### Trust Score
-
-Dynamic 0–100 score per agent, updated on each tool call.
-
-**Score decreases for:**
-- Failed tool calls
-- DLP violations (even in audit mode)
-- Circuit breaker events
-- HITL rejections
-- ODD boundary violations
-
-**Score recovers over time** via exponential decay (configurable half-life, default 168 hours).
-
-**Use in HITL triggers:**
-```yaml
-policies:
-  hitl:
-    triggers:
-      trust_score_below: 60   # Auto-escalate low-trust agents
-```
+**Collective Intelligence**
+When one agent detects a threat, every agent benefits. Anonymous IOC (Indicator of Compromise) sharing across tenants. Six AI-native IOC types. EigenTrust quality scoring. Sub-5s propagation. One detection in São Paulo protects a deployment in Berlin.
 
 ---
 
-### ODD Enforcement (Operator-Defined Domains)
+### ⚙️ Control & Governance
 
-Defines exactly which tools each agent is allowed to use. Blocks unexpected tool invocations.
+**ODD Enforcement (Operational Design Domain)**
+Declare exactly which tools, APIs, data sources, and time windows each agent is allowed to operate in. Allowlisting, not denylisting. Three modes: `audit`, `enforce`, `escalate`.
 
-```yaml
-policies:
-  odd:
-    enforcement_mode: enforce
-    default_policy: deny          # Block any unrecognized tool
-    agents:
-      researcher:
-        permitted_tools: [web_search, file_reader]
-        forbidden_tools: [code_runner]
-```
+**Magnitude Limits**
+Pre-action guardrails: spend caps per action/session/day, data volume limits, blast radius constraints, compute guardrails. All evaluated and enforced before execution.
 
-`default_policy: deny` is the recommended production posture — agents can only use tools you've explicitly approved.
+**Human-in-the-Loop (HITL)**
+Agents pause on high-risk actions and escalate to a human supervisor. Configurable triggers: tool type, trust threshold, spend amount, first-time actions. Webhook notifications via Slack, Teams, or email. EU AI Act Article 14 compliant.
 
----
+**Circuit Breaker**
+Per-agent and per-tool. If one tool fails repeatedly, that tool auto-suspends — the agent keeps running with everything else. Hierarchy: tool CB → agent CB → fleet halt. When a CB trips, operations don't die: they failover to deterministic code, a simpler agent, a human operator, or a retry queue. State is preserved.
 
-### Magnitude Limits
+**Programmable Hooks**
+Python scripts or YAML conditions that run at `pre_action`, `post_action`, `on_error`, and `on_session_end`. Stop hooks can block session completion until all checks pass.
 
-Hard limits on how much an agent can spend or access in a single call or session.
-
-```yaml
-policies:
-  magnitude:
-    max_spend_per_action_usd: 10.00
-    max_spend_per_session_usd: 100.00
-    max_records_per_action: 50
-    enforcement_mode: enforce
-```
-
-Magnitude enforcement at the proxy level also tracks **actions per minute** per agent to prevent runaway loops.
+**Context Versioning**
+Every config push creates an immutable SHA-256 snapshot. Audit logs reference the exact policy version active at the time of every action. Diff, rollback, and full change history included.
 
 ---
 
-### Intent Fingerprinting
+### 🕸️ Multi-Agent
 
-Binds each high-risk tool call to a cryptographically signed intent token, preventing:
-- **Prompt injection hijacking:** Attacker injects a prompt that causes the agent to reuse an approved intent for a different action
-- **Replay attacks:** Previously approved intents cannot be reused
+**Secure A2A**
+Agent-to-agent communication is routed through the governance gateway. Mutual authentication via DID exchange, channel policies controlling who talks to whom, injection scanning on inter-agent messages, and propagation depth limits to prevent prompt worm spread.
 
-```yaml
-policies:
-  intent_verification:
-    mode: enforce
-    required_for:
-      tool_types: [payment, write, execute]
-    anti_replay: true
-    intent_ttl_seconds: 300
-```
+**Multi-Agent Topology**
+Live directed graph of agent interactions. Detects resource contention, contradictory actions, cascade amplification, and circular dependencies. Fleet Health Score (0–100) always visible.
+
+**Chaos Engineering**
+Controlled fault injection for resilience testing: deny tools, inject latency, expire credentials, exhaust budgets, disconnect peers. Governance Grade (A–F) based on how the fleet responds. Safety-gated via HITL approval.
 
 ---
 
-### Agentic FinOps
+### 📊 Observability & FinOps
 
-Track, route, and budget LLM spend across your entire agent fleet.
+**Observability**
+Session traces with full span trees, latency breakdowns (P50/P95/P99), violation heatmaps, drift detection from intent fingerprint mismatches, loop detection, quality scoring, and A/B testing between policy versions.
 
-**Cost tracking:** Per-agent, per-model cost breakdown from API response usage fields.
+**Alerting**
+Configurable rules in YAML. Deliver to Slack, email, or PagerDuty. Example rules: `drift rate > 5%`, `daily spend > $100`, `injection events > 10/hour`.
 
-**Intelligent routing:** Route tasks to cheaper models based on configurable conditions:
-```yaml
-policies:
-  finops:
-    routing:
-      enabled: true
-      rules:
-        - condition: "task_complexity == 'low'"
-          model: gpt-4o-mini
-          reason: "Use cheaper model for simple tasks"
-```
+**FinOps**
+Cost-per-outcome tracking, smart model routing (route simple tasks to cheaper models), semantic caching (skip LLM calls for repeated queries), and budget alerts at 50/80/95%. The dashboard shows exactly how much Drako saved you.
 
-**Semantic caching:** Cache and reuse responses for semantically similar requests (configurable similarity threshold).
+**OTEL & SIEM Export**
+Pipe traces to Datadog, Grafana, or New Relic via OpenTelemetry. Export security events to Splunk or ELK via STIX 2.1 or CEF.
 
-**Budget alerts:** Alert at configurable spend percentages (50%, 80%, 95%) via webhook or email.
+**Audit Trail**
+SHA-256 hash chain with Ed25519 signatures. Every action logged with cryptographic integrity, policy snapshot reference, and intent proof. Tamper-evident, exportable, and regulator-ready.
+
+**Compliance Reports**
+Generated from real scan data and runtime telemetry. Covers EU AI Act Articles 9, 11, 12, and 14. Exportable for auditors and regulators.
 
 ---
 
-### Secure A2A
+## Supported Frameworks
 
-Authenticate and authorize inter-agent communication in multi-agent systems.
+Drako integrates with the frameworks your agents already run on. Detection is automatic.
 
-**Authentication methods:**
-- `did_exchange` — DID-based credential exchange (recommended)
-- `mtls` — Mutual TLS
-- `shared_secret` — Pre-shared key (least secure)
+| Framework | Integration method |
+|---|---|
+| LangGraph | AST-based discovery |
+| CrewAI | AST-based discovery |
+| AutoGen | AST-based discovery |
+| LangChain | Import / pattern detection |
+| LlamaIndex | Import / pattern detection |
+| PydanticAI | Import / pattern detection |
 
-**Worm detection:** Scans inter-agent messages for prompt injection patterns. Blocks messages that exceed a configurable propagation depth (prevents chain-of-thought injection from spreading).
-
----
-
-### Topology Monitoring
-
-Detects dangerous interaction patterns in multi-agent networks:
-
-| Pattern | Description |
-|---------|-------------|
-| Circular dependency | Agent A → Agent B → Agent A (infinite loop risk) |
-| Resource contention | Multiple agents competing for the same exclusive resource |
-| Cascade amplification | One agent's output triggers exponentially more agent calls |
-| Resource exhaustion | Agent network collectively consuming unbounded resources |
-
----
-
-### Chaos Engineering
-
-Deliberately inject failures to verify your fallback and recovery configurations work before they're needed in production.
-
-**Fault types:**
-- `tool_deny` — Block a specific tool entirely
-- `latency` — Inject artificial latency
-- `budget_exhaustion` — Simulate the remaining budget being nearly zero
-
-**Safety guardrails:**
-- `max_blast_radius` — Limits how many agents/tools are affected simultaneously
-- `auto_rollback_on_failure` — Automatically rolls back if the system becomes unhealthy
-- `require_approval` — Experiments require explicit approval before running
-
----
-
-## Upgrade Path
-
-Start in audit mode, upgrade when you've reviewed the logs:
-
-```bash
-drako init                      # Autopilot: everything in audit mode
-drako upgrade --balanced        # DLP enforce, ODD enforce, HITL reject on timeout
-drako upgrade --strict          # + Intent verification, cryptographic audit, magnitude enforce
-```
-
-Review what will change before upgrading:
-
-```bash
-drako upgrade --balanced --dry-run   # Preview policy changes without applying them
-```
