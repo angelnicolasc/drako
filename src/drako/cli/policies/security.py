@@ -671,6 +671,8 @@ class SEC010(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
         lower = all_content.lower()
 
         if any(p.lower() in lower for p in _INJECTION_DEFENSE_PATTERNS):

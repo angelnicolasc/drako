@@ -536,6 +536,26 @@ def generate_bom(metadata: ProjectMetadata) -> AgentBOM:
             seen_agents.add(key)
             all_agents.append(yaml_agent)
 
+    # TypeScript BOM extraction (if tree-sitter available and TS files exist)
+    from drako.ts_parser._compat import ts_available
+    if ts_available() and metadata.ts_files:
+        from drako.cli.ts_bom import generate_ts_bom
+        ts_bom = generate_ts_bom(metadata)
+        for agent in ts_bom.agents:
+            key = f"{agent.name}:{agent.file_path}"
+            if key not in seen_agents:
+                seen_agents.add(key)
+                all_agents.append(agent)
+        for tool in ts_bom.tools:
+            if tool.name not in seen_tools:
+                seen_tools.add(tool.name)
+                all_tools.append(tool)
+        for model in ts_bom.models:
+            if model.name.lower() not in seen_models:
+                seen_models.add(model.name.lower())
+                all_models.append(model)
+        all_prompts.extend(ts_bom.prompts)
+
     # MCP servers
     mcp_servers = _detect_mcp_servers(metadata)
 

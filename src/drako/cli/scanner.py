@@ -43,6 +43,7 @@ class ScanResult:
     determinism_score: int = 100
     determinism_grade: str = "A"
     reachability: list[ToolReachability] = field(default_factory=list)
+    languages: set[str] = field(default_factory=set)
 
 
 def run_scan(
@@ -94,6 +95,13 @@ def run_scan(
 
     duration_ms = int((time.monotonic() - start) * 1000)
 
+    # Detect languages present
+    languages: set[str] = set()
+    if metadata.python_files:
+        languages.add("python")
+    if metadata.ts_files:
+        languages.add("typescript")
+
     return ScanResult(
         metadata=metadata,
         bom=bom,
@@ -105,4 +113,5 @@ def run_scan(
         determinism_score=det_score,
         determinism_grade=det_grade,
         reachability=reachability,
+        languages=languages,
     )

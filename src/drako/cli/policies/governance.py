@@ -68,6 +68,8 @@ class GOV001(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if not _content_has_pattern(all_content, _AUDIT_PATTERNS):
             return [self._finding(
@@ -96,6 +98,8 @@ class GOV002(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if not _content_has_pattern(all_content, _POLICY_PATTERNS):
             return [self._finding(
@@ -193,6 +197,8 @@ class GOV005(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if not _content_has_pattern(all_content, _CIRCUIT_BREAKER_PATTERNS):
             return [self._finding(

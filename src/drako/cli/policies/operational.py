@@ -130,6 +130,8 @@ class ODD002(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if _content_has_pattern(all_content, _TOOL_ALLOWLIST_PATTERNS):
             return []
@@ -173,6 +175,8 @@ class ODD003(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         # Check globally for any spend-cap pattern
         if _content_has_pattern(all_content, _SPEND_CAP_PATTERNS):
@@ -210,6 +214,8 @@ class ODD004(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if _content_has_pattern(all_content, _TIME_CONSTRAINT_PATTERNS):
             return []

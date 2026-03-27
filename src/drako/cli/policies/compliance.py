@@ -62,6 +62,8 @@ class COM001(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if not _content_has_pattern(all_content, _LOGGING_PATTERNS):
             return [self._finding(
@@ -93,6 +95,8 @@ class COM002(BasePolicy):
         all_content = "\n".join(
             c for p, c in metadata.file_contents.items() if p.endswith(".py")
         )
+        if not all_content.strip():
+            return []
 
         if not _content_has_pattern(all_content, _OVERSIGHT_PATTERNS):
             return [self._finding(

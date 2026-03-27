@@ -29,6 +29,7 @@ class ProjectMetadata:
     """Collected project information used by all scan phases."""
     root: Path = field(default_factory=lambda: Path("."))
     python_files: list[Path] = field(default_factory=list)
+    ts_files: list[Path] = field(default_factory=list)
     config_files: dict[str, str] = field(default_factory=dict)    # filename -> content
     file_contents: dict[str, str] = field(default_factory=dict)   # rel_path -> content
     dependencies: dict[str, str | None] = field(default_factory=dict)  # package -> version
@@ -239,6 +240,16 @@ def collect_project_files(directory: Path) -> ProjectMetadata:
     # Parse dependencies
     metadata.dependencies = _extract_dependencies(metadata.config_files)
 
+    # Collect TypeScript / JavaScript files
+    from drako.cli.ts_discovery import collect_ts_files
+    collect_ts_files(root, metadata)
+
+    # Parse npm dependencies from package.json
+    if "package.json" in metadata.config_files:
+        from drako.cli.ts_discovery import parse_package_json
+        npm_deps = parse_package_json(metadata.config_files["package.json"])
+        metadata.dependencies.update(npm_deps)
+
     return metadata
 
 
@@ -446,12 +457,23 @@ def detect_frameworks(metadata: ProjectMetadata) -> list[FrameworkInfo]:
         else:
             all_found[name] = info
 
-    # Layer 3: Imports
+    # Layer 3: Python imports
     for name, info in _detect_from_imports(metadata.file_contents).items():
         if name in all_found:
             all_found[name].confidence = max(all_found[name].confidence, info.confidence)
         else:
             all_found[name] = info
+
+    # Layer 4: TypeScript frameworks (package.json + TS imports)
+    if metadata.ts_files or "package.json" in metadata.config_files:
+        from drako.cli.ts_discovery import detect_ts_frameworks
+        for info in detect_ts_frameworks(metadata):
+            if info.name in all_found:
+                all_found[info.name].confidence = max(
+                    all_found[info.name].confidence, info.confidence,
+                )
+            else:
+                all_found[info.name] = info
 
     frameworks = sorted(all_found.values(), key=lambda f: f.confidence, reverse=True)
     return frameworks
