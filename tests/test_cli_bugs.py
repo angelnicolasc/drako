@@ -155,7 +155,8 @@ class TestDiffFilter:
 
 class TestVersion:
 
-    def test_version_is_2_3_0(self):
+    def test_version_is_current(self):
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
-        assert "2.3.0" in result.output
+        from drako import __version__
+        assert __version__ in result.output
