@@ -174,34 +174,29 @@ drako baseline reset               # start fresh
 
 ## Observability Dashboard
 
-Drako ships with a **built-in observability dashboard** at [getdrako.com/dashboard](https://getdrako.com/dashboard) that gives you full visibility into your agent fleet. No external tools required.
-
-### Overview
-
-The command center shows your governance posture at a glance: audit entries, verified agents, policy blocks, and quota usage with real-time auto-refresh.
+Drako ships with a **built-in observability dashboard** at [getdrako.com/dashboard](https://getdrako.com/dashboard).
+No external tooling required.
 
 <!-- TODO: Replace with actual screenshot -->
 <!-- Screenshot: /dashboard showing MetricCards, quota bar, governance score trend, tool health grid -->
-<div align="center">
-<code>screenshot: dashboard overview — capture at /dashboard with live data</code>
-</div>
 
-### Observability
+The command center gives you your full governance posture at a glance — audit entries, verified agents,
+policy blocks, and quota usage — with real-time auto-refresh.
 
-Deep metrics across four dimensions: health overview, latency P50/P95/P99, violation heatmaps, and alert management.
+Every agent run produces signals across four dimensions. Drako surfaces them as actionable intelligence,
+not raw logs:
 
 <!-- TODO: Replace with actual screenshot -->
 <!-- Screenshot: /observability showing metrics tab with charts -->
-<div align="center">
-<code>screenshot: observability metrics — capture at /observability > Metrics tab</code>
-</div>
 
-**What you get:**
-- **Health Grade** — Unified A-F health score combining latency, error rate, and governance overhead
-- **Latency Tracking** — P50, P95, P99 percentiles with time-series visualization
-- **Violation Heatmap** — Hour-by-day grid showing where violations cluster
-- **Drift Detection** — Automatic detection of behavioral drift across your agent fleet
-- **Alert Rules** — Configurable alerts with test-fire capability
+| Dimension | What Drako shows you |
+|---|---|
+| **Health Grade** | Unified A–F score combining latency, error rate, and governance overhead |
+| **Latency** | P50 / P95 / P99 percentiles with full time-series visualization |
+| **Violation Heatmap** | Hour-by-day grid that reveals where and when violations cluster |
+| **Drift Detection** | Automatic identification of behavioral drift across your agent fleet |
+| **Alert Rules** | Configurable thresholds with test-fire capability before going live |
+
 
 ### FinOps
 
@@ -209,9 +204,6 @@ Track and optimize your AI spend with per-model and per-agent cost breakdowns.
 
 <!-- TODO: Replace with actual screenshot -->
 <!-- Screenshot: /finops showing cost donut chart and budget tracking -->
-<div align="center">
-<code>screenshot: finops dashboard — capture at /finops with cost data</code>
-</div>
 
 **What you get:**
 - **Cost by Model** — See exactly how much each LLM model costs you
@@ -288,7 +280,7 @@ Every tool call goes through a 13-stage pipeline before executing. If a tool is 
 
 ---
 
-### Out-of-process proxy
+## Out-of-process proxy
 
 Zero code changes. The agent can't bypass what doesn't run in its process.
 
@@ -298,6 +290,8 @@ export OPENAI_BASE_URL=http://localhost:8990/openai/v1
 ```
 
 📄 [Proxy docs →](docs/proxy-mode.md) · [Docker + Helm →](deploy/)
+
+---
 
 ## Autopilot Mode
 
@@ -365,7 +359,7 @@ jobs:
 
 ---
 
-## Ecosystem Ratings
+## Ecosystem Ratings (Coming soon)
 
 Drako scans popular frameworks, MCP servers, and open-source projects — and publishes the results.
 
