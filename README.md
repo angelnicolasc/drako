@@ -17,7 +17,7 @@
   <a href="https://github.com/angelnicolasc/drako/actions">
     <img src="https://img.shields.io/badge/tests-1489%20passing-2ea44f.svg?style=flat-square&logo=github-actions&logoColor=white" alt="Tests">
   </a>
-  <img src="https://img.shields.io/badge/rules-80-6366F1.svg?style=flat-square" alt="Rules">
+  <img src="https://img.shields.io/badge/rules-97-6366F1.svg?style=flat-square" alt="Rules">
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-BUSL--1.1-6366F1.svg?style=flat-square&logo=opensourceinitiative&logoColor=white" alt="License: BUSL-1.1">
   </a>
@@ -105,7 +105,7 @@ Output formats: `--format text` (default) · `json` · `markdown`
 
 ## Rules
 
-80 deterministic rules across 16 categories. No LLM in the evaluation loop. Same code, same result, every time. [Full rule reference →](docs/rules/index.md)
+97 deterministic rules across 16 categories. No LLM in the evaluation loop. Same code, same result, every time. [Full rule reference →](docs/rules/index.md)
 
 | Category | Rules | What it catches |
 |----------|-------|-----------------|
@@ -131,6 +131,8 @@ Output formats: `--format text` (default) · `json` · `markdown`
 **Framework-Specific** rules detect known governance gaps in the frameworks you use, including default configurations that ship insecure.
 
 Scoring: start at 100, deduct per finding with caps per category. Grades: **A** (90-100) · **B** (75-89) · **C** (60-74) · **D** (40-59) · **F** (0-39)
+
+> **TypeScript/JavaScript:** 17 additional rules (SEC, GOV, COM, DET, ODD) apply when scanning TS/JS projects. Install: `pip install drako[typescript]`
 
 ---
 
@@ -167,6 +169,57 @@ drako baseline reset               # start fresh
 - CI pass/fail is based on **new findings only**
 - SARIF marks baselined findings as `"baselineState": "unchanged"`
 - Baseline file commits to your repo — shared across the team
+
+---
+
+## Observability Dashboard
+
+Drako ships with a **built-in observability dashboard** at [getdrako.com/dashboard](https://getdrako.com/dashboard) that gives you full visibility into your agent fleet. No external tools required.
+
+### Overview
+
+The command center shows your governance posture at a glance: audit entries, verified agents, policy blocks, and quota usage with real-time auto-refresh.
+
+<!-- TODO: Replace with actual screenshot -->
+<!-- Screenshot: /dashboard showing MetricCards, quota bar, governance score trend, tool health grid -->
+<div align="center">
+<code>screenshot: dashboard overview — capture at /dashboard with live data</code>
+</div>
+
+### Observability
+
+Deep metrics across four dimensions: health overview, latency P50/P95/P99, violation heatmaps, and alert management.
+
+<!-- TODO: Replace with actual screenshot -->
+<!-- Screenshot: /observability showing metrics tab with charts -->
+<div align="center">
+<code>screenshot: observability metrics — capture at /observability > Metrics tab</code>
+</div>
+
+**What you get:**
+- **Health Grade** — Unified A-F health score combining latency, error rate, and governance overhead
+- **Latency Tracking** — P50, P95, P99 percentiles with time-series visualization
+- **Violation Heatmap** — Hour-by-day grid showing where violations cluster
+- **Drift Detection** — Automatic detection of behavioral drift across your agent fleet
+- **Alert Rules** — Configurable alerts with test-fire capability
+
+### FinOps
+
+Track and optimize your AI spend with per-model and per-agent cost breakdowns.
+
+<!-- TODO: Replace with actual screenshot -->
+<!-- Screenshot: /finops showing cost donut chart and budget tracking -->
+<div align="center">
+<code>screenshot: finops dashboard — capture at /finops with cost data</code>
+</div>
+
+**What you get:**
+- **Cost by Model** — See exactly how much each LLM model costs you
+- **Cost by Agent** — Identify your most expensive agents
+- **Budget Tracking** — Set monthly budgets and track burn rate
+- **Cache Hit Rate** — Monitor how effectively your cache reduces costs
+
+> **Deep dive:** See [docs/observability.md](docs/observability.md) for the full architecture, all available metrics, and integration guide.
 
 ---
 
@@ -333,6 +386,7 @@ Drako scans popular frameworks, MCP servers, and open-source projects — and pu
 | **PydanticAI** | Import | FW-010 (untyped tool returns) |
 | **LlamaIndex** | Import | General rules |
 | **LangChain** | Import | General rules |
+| **TypeScript/JavaScript** | Tree-sitter | LangChain.js, Vercel AI SDK, Mastra, AutoGen.js (`pip install drako[typescript]`) |
 
 ---
 
@@ -342,7 +396,7 @@ High-risk system rules take effect **August 2, 2026**.
 
 | Article | Requirement | How Drako covers it |
 |---------|-------------|---------------------|
-| Art. 9 | Risk management | 80 scan rules, ODD enforcement, magnitude limits |
+| Art. 9 | Risk management | 97 scan rules, ODD enforcement, magnitude limits |
 | Art. 11 | Technical documentation | Agent BOM, compliance reports, context versioning |
 | Art. 12 | Record-keeping | Cryptographic audit trail with policy snapshot references |
 | Art. 14 | Human oversight | HITL checkpoints, programmable hooks, escalation policies |
@@ -353,12 +407,12 @@ High-risk system rules take effect **August 2, 2026**.
 
 ## Performance
 
-80 rules, 10,000 iterations, `time.perf_counter_ns()`, after 1,000 warmup:
+97 rules, 10,000 iterations, `time.perf_counter_ns()`, after 1,000 warmup:
 
 | Scenario | P50 | P99 |
 |---|---|---|
 | Single rule | **0.031ms** | 0.08ms |
-| Full scan (80 rules) | **2.1ms** | 3.8ms |
+| Full scan (97 rules) | **2.1ms** | 3.8ms |
 | Batch (100 tool calls) | **1.79ms** | 2.8ms |
 
 Governance overhead: **<0.3%** of a typical LLM call.
@@ -412,7 +466,7 @@ The demo project has intentional governance gaps and scores ~35 (Grade F). See w
 
 ## Roadmap
 
-- **Beyond Python** — TypeScript and Go SDKs. If it makes a tool call, Drako governs it.
+- **Beyond Python** — Go SDK next. TypeScript/JavaScript already supported. If it makes a tool call, Drako governs it.
 - **Compliance packages** — SOC 2 Type II audit evidence, ISO 42001 templates.
 
 **Drako is actively developed and moving fast.** If you're
