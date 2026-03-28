@@ -128,9 +128,9 @@ def push(config_path: str, endpoint: str | None, yes: bool) -> None:
 
     click.echo()
     if message:
-        click.echo(click.style("  ✓ ", fg="green") + message)
+        click.echo(click.style("  [OK] ", fg="green") + message)
     else:
-        click.echo(click.style("  ✓ ", fg="green") + f"Config synced to Drako platform (snapshot v{version})")
+        click.echo(click.style("  [OK] ", fg="green") + f"Config synced to Drako platform (snapshot v{version})")
 
     # Active features
     active = data.get("active_features", [])
@@ -140,13 +140,13 @@ def push(config_path: str, endpoint: str | None, yes: bool) -> None:
         click.echo()
         click.echo("  Active features:")
         for f in active:
-            click.echo(click.style("    ✓ ", fg="green") + f)
+            click.echo(click.style("    [OK] ", fg="green") + f)
 
     if locked:
         click.echo()
         click.echo("  Locked features (upgrade to unlock):")
         for f in locked:
-            click.echo(click.style("    ✗ ", fg="yellow") + f)
+            click.echo(click.style("    [X] ", fg="yellow") + f)
 
     click.echo()
     click.echo("  Dashboard: " + click.style("https://app.getdrako.com/dashboard", fg="cyan", underline=True))

@@ -34,7 +34,8 @@ _LLM_CALL_PATTERNS = re.compile(
 # are set on method calls instead.
 _LLM_CONSTRUCTOR_PATTERNS = re.compile(
     r"^(?:ChatOpenAI|ChatAnthropic|AzureChatOpenAI|"
-    r"ChatGoogleGenerativeAI|Gemini|Ollama|ChatOllama)$",
+    r"ChatGoogleGenerativeAI|Gemini|Ollama|ChatOllama|"
+    r"Agent|AssistantAgent|UserProxyAgent)$",
 )
 
 _TEMPERATURE_KWARG = "temperature"

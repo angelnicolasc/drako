@@ -275,6 +275,19 @@ def _extract_tools_ast(file_path: str, content: str) -> list[DetectedTool]:
                     line_number=node.lineno,
                 ))
 
+            # ToolNode([func1, func2, ...]) — LangGraph pattern
+            if func_name == "ToolNode" and node.args:
+                first_arg = node.args[0]
+                if isinstance(first_arg, ast.List):
+                    for elt in first_arg.elts:
+                        ref_name = _get_name(elt)
+                        if ref_name:
+                            tools.append(DetectedTool(
+                                name=ref_name,
+                                file_path=file_path,
+                                line_number=elt.lineno if hasattr(elt, "lineno") else node.lineno,
+                            ))
+
     return tools
 
 

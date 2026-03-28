@@ -176,27 +176,47 @@ class VCR001(BasePolicy):
         model_vendors = _detect_model_vendors(bom, metadata)
         framework_vendors = _detect_framework_vendors(bom)
 
-        if not model_vendors or not framework_vendors:
-            return []
+        # Case 1: Model + framework from same vendor
+        if model_vendors and framework_vendors:
+            overlap = model_vendors & framework_vendors
+            if overlap:
+                vendor = next(iter(overlap))
+                return [self._finding(
+                    message=(
+                        f"Model API and agent framework are both from the same vendor "
+                        f"({vendor}). Governance decisions may be influenced by vendor "
+                        f"priorities rather than your security posture."
+                    ),
+                    fix_snippet=(
+                        "# Consider decoupling model provider from framework vendor:\n"
+                        "# 1. Use LiteLLM or a model router for vendor-agnostic calls\n"
+                        "# 2. Test with models from at least two providers\n"
+                        "# 3. Ensure fallback models are from a different vendor"
+                    ),
+                )]
 
-        overlap = model_vendors & framework_vendors
-        if not overlap:
-            return []
+        # Case 2: All models from a single vendor (vendor monoculture)
+        # Applies when framework is independent (not vendor-locked)
+        if model_vendors and len(model_vendors) == 1 and not framework_vendors:
+            # Only flag if there are 2+ models from the same vendor
+            model_count = len(bom.models)
+            if model_count >= 2:
+                vendor = next(iter(model_vendors))
+                return [self._finding(
+                    message=(
+                        f"All {model_count} models come from a single vendor "
+                        f"({vendor}). A vendor outage or pricing change would "
+                        f"affect your entire agent fleet."
+                    ),
+                    fix_snippet=(
+                        "# Diversify model providers to reduce vendor concentration risk:\n"
+                        "# 1. Use LiteLLM or a model router for vendor-agnostic calls\n"
+                        "# 2. Configure fallback models from a different provider\n"
+                        "# 3. Test with at least two model vendors"
+                    ),
+                )]
 
-        vendor = next(iter(overlap))
-        return [self._finding(
-            message=(
-                f"Model API and agent framework are both from the same vendor "
-                f"({vendor}). Governance decisions may be influenced by vendor "
-                f"priorities rather than your security posture."
-            ),
-            fix_snippet=(
-                "# Consider decoupling model provider from framework vendor:\n"
-                "# 1. Use LiteLLM or a model router for vendor-agnostic calls\n"
-                "# 2. Test with models from at least two providers\n"
-                "# 3. Ensure fallback models are from a different vendor"
-            ),
-        )]
+        return []
 
 
 # ---------------------------------------------------------------------------

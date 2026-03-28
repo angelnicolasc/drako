@@ -71,4 +71,9 @@ def bom(directory: str, output_format: str, output: str | None) -> None:
         P(output).write_text(content, encoding="utf-8")
         click.echo(f"BOM written to {output}")
     else:
-        click.echo(content)
+        import sys
+        try:
+            click.echo(content)
+        except UnicodeEncodeError:
+            sys.stdout.buffer.write(content.encode("utf-8", errors="replace"))
+            sys.stdout.buffer.write(b"\n")

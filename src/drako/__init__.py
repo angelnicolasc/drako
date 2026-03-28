@@ -1,6 +1,6 @@
 """Drako SDK — The Trust Layer for AI Agents."""
 
-__version__ = "2.4.0"
+__version__ = "2.4.1"
 
 from drako.client import DrakoClient
 from drako.config import DrakoConfig
@@ -70,6 +70,6 @@ def govern(obj, **kwargs):
         from drako import govern
         crew = govern(crew)
     """
-    from drako.govern import govern as _govern
+    from drako._governance import govern as _govern
 
     return _govern(obj, **kwargs)

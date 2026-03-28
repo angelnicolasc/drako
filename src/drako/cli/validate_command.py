@@ -172,11 +172,11 @@ def validate(file: str) -> None:
 
 
 def _ok(msg: str) -> None:
-    click.echo(click.style("  \u2713 ", fg="green") + msg)
+    click.echo(click.style("  [OK] ", fg="green") + msg)
 
 
 def _err(msg: str) -> None:
-    click.echo(click.style("  \u2717 ", fg="red") + msg)
+    click.echo(click.style("  [FAIL] ", fg="red") + msg)
 
 
 def _warn(msg: str) -> None:

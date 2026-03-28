@@ -34,5 +34,5 @@ def rollback(version: str, config_path: str | None, yes: bool) -> None:
 
     new_version = resp.get("version", "?")
     click.echo()
-    click.secho(f"✓ Rolled back to v{version}. New version: v{new_version}", fg="green")
-    click.secho("✓ Config pushed to platform", fg="green")
+    click.secho(f"[OK] Rolled back to v{version}. New version: v{new_version}", fg="green")
+    click.secho("[OK] Config pushed to platform", fg="green")

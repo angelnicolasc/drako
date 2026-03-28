@@ -1,10 +1,10 @@
 """Governance score calculation for `drako scan`.
 
 Scoring formula (start at 100, deduct per severity with caps):
-  - CRITICAL: -15 each, cap -60
-  - HIGH:     -8 each,  cap -40
-  - MEDIUM:   -3 each,  cap -20
-  - LOW:      -1 each,  cap -10
+  - CRITICAL: -10 each, cap -40
+  - HIGH:     -5 each,  cap -30
+  - MEDIUM:   -2 each,  cap -15
+  - LOW:      -1 each,  cap -5
 
 Category caps (applied after severity caps):
   - Framework: -30 max
@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 
 # Points deducted per finding of each severity
 _PER_FINDING = {
-    "CRITICAL": 15,
-    "HIGH": 8,
-    "MEDIUM": 3,
+    "CRITICAL": 10,
+    "HIGH": 5,
+    "MEDIUM": 2,
     "LOW": 1,
 }
 
 # Maximum total deduction per severity category
 _CAPS = {
-    "CRITICAL": 60,
-    "HIGH": 40,
-    "MEDIUM": 20,
-    "LOW": 10,
+    "CRITICAL": 40,
+    "HIGH": 30,
+    "MEDIUM": 15,
+    "LOW": 5,
 }
 
 # Maximum total deduction per finding category (only categories that need caps)

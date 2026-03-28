@@ -423,6 +423,11 @@ class GOV009(BasePolicy):
     def evaluate(self, bom: AgentBOM, metadata: ProjectMetadata) -> list[Finding]:
         findings: list[Finding] = []
 
+        # If .drako.yaml has HITL mode enabled, tools are covered by config-level HITL
+        drako_config = metadata.config_files.get(".drako.yaml", "")
+        if drako_config and re.search(r"hitl:\s*\n\s*mode:\s*(?:enforce|optional|auto)", drako_config):
+            return findings
+
         for tool in bom.tools:
             if not _CRITICAL_TOOL_PATTERNS.search(tool.name):
                 continue

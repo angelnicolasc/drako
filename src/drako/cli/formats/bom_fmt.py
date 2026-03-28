@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 def format_bom_text(bom: AgentBOM, metadata: ProjectMetadata, duration_ms: int) -> str:
     """Render BOM as Rich terminal output to a string."""
     buf = StringIO()
-    console = Console(file=buf, force_terminal=True, width=100)
+    console = Console(file=buf, force_terminal=True, width=100, legacy_windows=True)
 
     framework_str = ", ".join(
         f"{fw.name} {fw.version or ''}" for fw in bom.frameworks
@@ -31,8 +31,8 @@ def format_bom_text(bom: AgentBOM, metadata: ProjectMetadata, duration_ms: int) 
     # Header
     header = Text()
     header.append(f"{metadata.root.name}", style="bold cyan")
-    header.append(f" \u2502 {framework_str}", style="white")
-    header.append(f" \u2502 scanned in {duration_ms / 1000:.1f}s", style="dim")
+    header.append(f" | {framework_str}", style="white")
+    header.append(f" | scanned in {duration_ms / 1000:.1f}s", style="dim")
 
     console.print(Panel(header, title="[bold]Agent BOM[/bold]", border_style="cyan"))
     console.print()

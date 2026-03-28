@@ -347,6 +347,7 @@ def scan(
             f for f in result.findings
             if f.severity.lower() in _SEVERITY_ORDER
             and _SEVERITY_ORDER.index(f.severity.lower()) >= threshold_idx
+            and getattr(f, "finding_type", "vulnerability") == "vulnerability"
         ]
         if failing:
             click.secho(
@@ -369,8 +370,13 @@ def scan(
         )
         sys.exit(1)
 
-    # CRITICAL findings gate — always exit 1 if any CRITICAL finding exists
-    critical_count = sum(1 for f in result.findings if f.severity == "CRITICAL")
+    # CRITICAL findings gate — always exit 1 if any CRITICAL vulnerability exists
+    # Recommendations (finding_type="recommendation") are excluded from gating
+    critical_count = sum(
+        1 for f in result.findings
+        if f.severity == "CRITICAL"
+        and getattr(f, "finding_type", "vulnerability") == "vulnerability"
+    )
     if critical_count > 0:
         click.secho(
             f"  [gate]  {critical_count} CRITICAL finding(s) detected",
