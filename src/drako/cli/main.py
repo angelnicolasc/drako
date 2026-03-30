@@ -57,6 +57,7 @@ def _register_commands() -> None:
     from drako.cli.proxy_command import proxy
     from drako.cli.serve_command import serve
     from drako.cli.verify_command import verify
+    from drako.cli.desktop_command import desktop
 
     # Ordered by user journey: scan → configure → connect → manage
     cli.add_command(scan)
@@ -76,6 +77,7 @@ def _register_commands() -> None:
     cli.add_command(proxy)
     cli.add_command(serve)
     cli.add_command(verify)
+    cli.add_command(desktop)
 
 
 _register_commands()
