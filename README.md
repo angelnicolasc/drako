@@ -132,7 +132,9 @@ Output formats: `--format text` (default) · `json` · `markdown`
 
 Scoring: start at 100, deduct per finding with caps per category. Grades: **A** (90-100) · **B** (75-89) · **C** (60-74) · **D** (40-59) · **F** (0-39)
 
-> **TypeScript/JavaScript:** 17 additional rules (SEC, GOV, COM, DET, ODD) apply when scanning TS/JS projects. Install: `pip install drako[typescript]`
+> **TypeScript/JavaScript:** 17 additional rules (SEC, GOV, COM, DET, ODD) apply when scanning TS/JS projects.
+
+> Install: `pip install drako[typescript]`
 
 ---
 
@@ -212,6 +214,25 @@ Track and optimize your AI spend with per-model and per-agent cost breakdowns.
 - **Cache Hit Rate** — Monitor how effectively your cache reduces costs
 
 > **Deep dive:** See [docs/observability.md](docs/observability.md) for the full architecture, all available metrics, and integration guide.
+
+---
+
+
+## Desktop Agent Scanning
+
+Scans the MCP servers declared in your AI coding tools — Claude Desktop, 
+Cursor, VS Code, Windsurf, Claude Code, Codex CLI, Gemini CLI, and Kiro.
+```bash
+drako desktop scan          # Discover + scan all installed AI clients
+drako desktop bom           # Export the BOM from the desktop agents
+drako desktop govern        # Scan + activate proxy protection
+```
+
+8 deterministic rules covering shell/exec capabilities, plaintext credentials, 
+unencrypted transport, elevated privileges, and unrestricted filesystem access. 
+Fully offline and 100% deterministic. No network requests during scanning.
+
+📄 **[Desktop scanning docs →](docs/desktop-scanning.md) View the complete documentation here**
 
 ---
 
