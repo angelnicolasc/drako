@@ -6,12 +6,12 @@
     "url": "https://github.com/angelnicolasc/drako",
     "source": "github"
   },
-  "version": "2.5.1",
+  "version": "2.5.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "drako",
-      "version": "2.5.1",
+      "version": "2.5.2",
       "transport": {
         "type": "stdio"
       }
