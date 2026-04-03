@@ -30,38 +30,16 @@ pip install drako && drako scan .
 
 ---
 
-## Scan
+## Scan for Free
 
-```
-┌─ Drako Scan ─────────────────────────────────────────────┐
-│ my-project  │  crewai 0.86.0  │  0.4s                    │
-└──────────────────────────────────────────────────────────┘
+<p align="center">
+  <img src=".github/assets/drakoscanner.svg" alt="Drako – AI Agent Security & Governance" width="100%">
+</p>
 
-  Agent BOM: 3 agents │ 12 tools │ 2 models │ 4 prompts
+Two scores, two audiences. **Governance** speaks to security teams — are your agents safe?
+**Determinism** speaks to engineers — will they behave the same way twice?
 
-  GOVERNANCE:  42/100 [D] ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱  42%
-  DETERMINISM: 34/100 [F] ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱  34%
-
-  Better than 28% of scanned projects
-
-  CRITICAL  3  │  HIGH  5  │  MEDIUM  4  │  LOW  2
-
-  SEC-001  API key hardcoded in source           (src/main.py)
-           ⚠ REACHABLE — used by agent 'researcher'
-           Related: DRAKO-ABSS-2026-003
-           Impact: Attacker inherits all agent permissions
-           Ref: CWE-798, OWASP LLM06
-
-  SEC-005  Arbitrary code execution in tool      (tools/runner.py)
-           ○ UNREACHABLE — no agent references this tool
-
-  DET-001  LLM temperature not set               (agents/writer.py)
-           Impact: Non-deterministic outputs between runs
-```
-
-Two scores, two audiences. **Governance** speaks to security teams: are your agents safe? **Determinism** speaks to engineers: will they behave the same way twice?
-
-**Reachability** separates real risks from theoretical ones — a dangerous tool that no agent actually uses is dimmed, not screamed at you.
+**Reachability** separates real risks from theoretical ones: a dangerous tool no agent actually calls is flagged, not screamed at you.
 
 ```bash
 drako scan .                       # Full scan, both scores
@@ -88,16 +66,9 @@ Standalone inventory. No runtime, no network, pure AST.
 drako bom .
 ```
 
-```
-Agents     3  researcher, writer, reviewer
-Tools     12  web_search, file_reader, code_runner, ...
-Models     2  gpt-4o, claude-sonnet-4-20250514
-MCP        1  server (filesystem)
-Prompts    4  system prompts (content hashed, not exposed)
-Perms         filesystem, network, code_execution
-Framework  crewai 0.86.0
-Vendors    OpenAI (model), Anthropic (model)
-```
+<p align="center">
+  <img src=".github/assets/agentbom.svg" alt="Drako – AI Agent Security & Governance" width="100%">
+</p>
 
 Output formats: `--format text` (default) · `json` · `markdown`
 
