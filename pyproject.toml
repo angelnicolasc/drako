@@ -7,7 +7,7 @@ name = "drako"
 version = "2.5.2"
 description = "The Python Governance Platform for AI Agents — compliance middleware for LangGraph, CrewAI, AutoGen"
 readme = "README.md"
-license = "MIT"
+license = "BUSL-1.1"
 requires-python = ">=3.10"
 authors = [
     { name = "Drako", email = "hello@getdrako.com" },
@@ -58,9 +58,8 @@ drako = "drako.cli.main:cli"
 
 [project.urls]
 Homepage = "https://getdrako.com"
-Documentation = "https://docs.getdrako.com"
-Repository = "https://github.com/agentmesh/drako-python"
-Issues = "https://github.com/agentmesh/drako-python/issues"
+Repository = "https://github.com/DrakoLabs/drako"
+Issues = "https://github.com/DrakoLabs/drako/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/drako"]
