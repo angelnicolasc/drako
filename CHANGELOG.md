@@ -4,6 +4,131 @@ All notable changes to Drako are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+
+## [2.5.0] - 2026-04-01
+
+### Added
+- **Desktop Agent Scanning** — `drako desktop scan/bom/govern` commands
+  - Auto-discovery of MCP servers across 8 clients: Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Codex CLI, Gemini CLI, Kiro
+  - Cross-platform config path detection (macOS, Linux, Windows)
+  - 8 MCP-specific security rules (MCP-001 → MCP-008): unrestricted filesystem, shell capability, untrusted source, unrestricted network, plaintext credentials, unencrypted transport, elevated privileges, compound capabilities
+  - `drako desktop govern` — scan + activate runtime proxy to intercept MCP traffic
+  - Desktop Governance Score separate from project scoring
+  - Output formats: text, JSON, SARIF, markdown
+- **RFC 3161 timestamping** on audit trail — externally verifiable by EU AI Act auditors
+  - TSA redundancy: FreeTSA primary, DFN backup
+  - Offline verification via embedded certificate chain
+  - `tsa_token` column on audit_logs table
+  - GET /api/v1/audit/verify/{entry_id} endpoint
+- **Threat Intel Bootstrap** — automated daily sync from AlienVault OTX and abuse.ch
+  - Quality gate: rejects pulses with <10 subscribers or zero indicators
+  - Maps external threats to DRAKO-ABSS format with `external: true` metadata
+  - GitHub Action cron: daily 6 AM UTC
+- **Scanner Limitations Documentation** — `docs/scanner-limitations.md`
+  - Transparent disclosure of 5 known gaps: interprocedural taint, TS type resolution, semantic injection, in-process enforcement, cross-agent taint
+  - Roadmap issue labels on GitHub for each gap
+
+### Fixed
+- MCP server Dockerfile: corrected CMD to use `drako serve` instead of broken module path
+- `drako/mcp/__main__.py` added to enable `python -m drako.mcp`
+- server.json version sync with SDK version
+
+---
+
+## [2.4.2] - 2026-03-30
+
+### Fixed
+- **Windows encoding crash** — `drako push` and other commands no longer crash on cp1252 with box-drawing characters
+  - Systemic fix via `configure_output()` at CLI startup
+  - `errors='replace'` fallback for non-UTF-8 terminals
+- **`drako simulate`** now reads API key from `.drako.yaml` (was ignoring `api_key_env`)
+- **`drako validate`** auto-detects `.drako.yaml` in current directory when argument omitted
+- **`drako scan --threshold`** flag added (was only `--threshold-det`)
+- **`drako scan --benchmark`** panel now renders (was silent)
+- **`drako scan --share`** texts include `getdrako.com` URL (was only pip install)
+- **`drako init`** correctly validates API key against backend (was "Could not reach backend" on valid keys)
+- **Backend upgrade URLs** — all references to `useagentmesh.com` replaced with `getdrako.com` in 403 responses and feature-gating messages
+
+### Changed
+- Command ordering in `drako --help` — journey-linear (scan → init → push) instead of alphabetical
+- Quickstart hint added to `drako` help output
+- Post-scan CTA no longer suggests `pip install drako` (user already has it)
+- First-scan output truncated to top 10 findings with `... and X more` footer
+- Benchmark panel labeled "benchmark dataset" instead of "100 scanned projects"
+
+---
+
+## [2.4.1] - 2026-03-29
+
+### Added
+- **SSO via WorkOS** (Enterprise tier) — Okta, Azure AD, SAML, Google Workspace
+  - GET /api/v1/auth/sso/authorize?email=X
+  - GET /api/v1/auth/sso/callback
+  - POST /api/v1/settings/sso/enable (owner only, enterprise plan)
+  - CSRF state tokens via Redis (10min TTL, one-time use) with HMAC fallback
+  - Auto-provisioning of users matching tenant's sso_domain
+  - Password login blocked server-side for SSO-enforced domains
+  - Domain normalization (case-insensitive comparison)
+- 28 SSO tests (CSRF state, password blocking, domain validation, enable/disable flows)
+
+---
+
+## [2.4.0] - 2026-03-28
+
+### Added
+- **Production Dashboard** — full observability UI at getdrako.com/dashboard
+  - Stats grid with MetricCards (audit entries, agents, policy blocks, trust score)
+  - Governance Score Trend (TimeSeriesChart)
+  - Tool Health Grid (circuit breaker status per tool)
+  - Recent Activity feed with 30s auto-refresh
+  - Governance Roadmap component (conversion hook with tier-tagged action items)
+- **Observability page** — 4 tabs (Overview, Metrics, Violations, Alerts)
+  - P50/P95/P99 latency charts
+  - Bottleneck detection
+  - Cost breakdown by model (DonutChart)
+  - Violation heatmap (7 days × severity)
+- **FinOps page** — cost tracking, budget burn-down, model/agent breakdown
+- **Settings page** — config viewer, snapshot history, feature status
+- recharts integration for all visualizations
+- PlanGate component for Pro/Enterprise feature gating
+
+---
+
+## [2.3.1] - 2026-03-26
+
+### Fixed
+- **10 integration test issues** discovered in E2E testing
+- **govern() module/function shadowing** — renamed `govern.py` → `governance_wrapper.py` to eliminate namespace collision
+- **Scoring recalibration** — reduced per-finding deductions (CRITICAL -10, HIGH -5, MEDIUM -2, LOW -1) to prevent score floor at 0
+- **DET-001** now detects missing temperature on CrewAI `Agent()` constructors
+- **LangGraph tools** detected in BOM via `ToolNode([...])` and `tools=[...]` patterns
+- **VCR-001** extracts vendors from `ChatOpenAI()`, `ChatAnthropic()`, `ChatGoogleGenerativeAI()` constructors
+- **Global governance rules** reclassified — ODD-001, MAG-001, ID-001, HOOK-001, CV-001, FIN-001, RES-001, CI-001, MULTI-004 now finding_type="recommendation" (do not affect score)
+- **validate command** UnicodeEncodeError on Windows (systemic fix via CAN_UNICODE pattern)
+- **drako bom --format text** exit code (now 0 even with 0 agents found)
+- **Telemetry endpoint** no longer requires auth (anonymous events)
+- **Config push API schema** aligned (flat payload accepted)
+
+---
+
+## [2.3.0] - 2026-03-25
+
+### Added
+- **TypeScript Scanner** — Tree-sitter based TS/JS scanning alongside Python
+  - Framework detection: LangChain.js, Vercel AI SDK, Mastra, AutoGen.js
+  - 17 TypeScript rules covering Security (10), Governance (3), Determinism (2), Compliance (1), Operational (1)
+  - TS BOM extraction: agents, tools, models, prompts from `.ts/.tsx/.js/.jsx/.mts/.mjs` files
+  - Mixed Python+TypeScript projects supported with merged scoring
+  - Optional dependency: `pip install drako[typescript]`
+  - 15 TypeScript rule fixtures with vulnerable/safe pairs
+  - 34 TypeScript tests
+- **Clean project output** — projects without AI agent components show friendly message instead of generic findings
+- **Graceful degradation** — TS files detected without tree-sitter installed show install hint, Python scan continues
+
+### Changed
+- Policy count: 97 total (80 Python + 17 TypeScript)
+- Rule count badge updated across README, docs, and scoring section
+
 ## [2.2.2] - 2026-03-24
 
 ### Fixed
