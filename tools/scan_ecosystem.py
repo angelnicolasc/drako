@@ -69,95 +69,100 @@ def discover_by_code_search(
 
     try:
         for fw_name, fw_cfg in config.items():
-            query = str(fw_cfg["query"])
+            queries = list(fw_cfg["queries"])  # type: ignore[arg-type]
             min_stars = int(fw_cfg.get("min_stars", 50))  # type: ignore[arg-type]
             limit = int(fw_cfg.get("limit", 15))  # type: ignore[arg-type]
 
-            click.echo(f"  [{fw_name}] Searching: {query}")
-            repos_for_fw: list[RepoInfo] = []
-            seen_in_query: set[str] = set()
+            click.echo(f"  [{fw_name}] {len(queries)} queries, min_stars={min_stars}, limit={limit}")
+            seen_in_fw: set[str] = set()
 
-            # Code Search API: paginate up to 3 pages
-            for page in range(1, 4):
-                if len(repos_for_fw) >= limit:
-                    break
+            # Phase A: union candidate repo names across all queries
+            for query in queries:
+                click.echo(f"    Searching: {query}")
+                for page in range(1, 4):
+                    url = f"{_GITHUB_API}/search/code"
+                    params = {"q": str(query), "per_page": 30, "page": page}
 
-                url = f"{_GITHUB_API}/search/code"
-                params = {"q": query, "per_page": 30, "page": page}
-
-                try:
-                    resp = client.get(url, headers=headers, params=params)
-                except httpx.HTTPError as e:
-                    click.echo(f"    HTTP error: {e}", err=True)
-                    break
-
-                if resp.status_code in (403, 429):
-                    _sleep_for_rate_limit(resp)
-                    continue
-
-                if resp.status_code == 422:
-                    click.echo(f"    Code search returned 422 (validation error), skipping", err=True)
-                    break
-
-                if resp.status_code != 200:
-                    click.echo(f"    Code search returned {resp.status_code}", err=True)
-                    break
-
-                _sleep_for_rate_limit(resp)
-
-                data = resp.json()
-                items: list[dict[str, object]] = data.get("items", [])
-                if not items:
-                    break
-
-                # Extract unique repos from code search results
-                for item in items:
-                    repo_data = item.get("repository", {})
-                    full_name = str(repo_data.get("full_name", ""))  # type: ignore[union-attr]
-                    if not full_name or full_name in seen_in_query or full_name in global_seen:
-                        continue
-                    seen_in_query.add(full_name)
-
-                # Fetch metadata for each unique repo
-                for full_name in list(seen_in_query):
-                    if full_name in global_seen or len(repos_for_fw) >= limit:
-                        continue
-
-                    time.sleep(1)  # Be gentle with API
                     try:
-                        repo_resp = client.get(
-                            f"{_GITHUB_API}/repos/{full_name}",
-                            headers=headers,
-                        )
-                    except httpx.HTTPError:
+                        resp = client.get(url, headers=headers, params=params)
+                    except httpx.HTTPError as e:
+                        click.echo(f"      HTTP error: {e}", err=True)
+                        break
+
+                    if resp.status_code in (403, 429):
+                        _sleep_for_rate_limit(resp)
                         continue
 
-                    if repo_resp.status_code != 200:
-                        continue
+                    if resp.status_code == 422:
+                        click.echo(f"      Code search returned 422 (validation error), skipping", err=True)
+                        break
 
-                    _sleep_for_rate_limit(repo_resp)
-                    repo_json = repo_resp.json()
+                    if resp.status_code != 200:
+                        click.echo(f"      Code search returned {resp.status_code}", err=True)
+                        break
 
-                    stars = int(repo_json.get("stargazers_count", 0))
-                    if stars < min_stars:
-                        continue
+                    _sleep_for_rate_limit(resp)
 
-                    global_seen.add(full_name)
-                    repos_for_fw.append(RepoInfo(
-                        full_name=full_name,
-                        clone_url=str(repo_json.get("clone_url", "")),
-                        stars=stars,
-                        language=str(repo_json.get("language", "") or ""),
-                        description=str(repo_json.get("description", "") or "")[:200],
-                        topics=tuple(repo_json.get("topics", [])),
-                    ))
+                    data = resp.json()
+                    items: list[dict[str, object]] = data.get("items", [])
+                    if not items:
+                        break
+
+                    new_in_page = 0
+                    for item in items:
+                        repo_data = item.get("repository", {})
+                        full_name = str(repo_data.get("full_name", ""))  # type: ignore[union-attr]
+                        if not full_name or full_name in seen_in_fw or full_name in global_seen:
+                            continue
+                        seen_in_fw.add(full_name)
+                        new_in_page += 1
+
+                    if new_in_page == 0:
+                        break  # nothing new on this page, stop paginating this query
 
                 # Code Search rate limit: 10 req/min for authenticated users
                 time.sleep(6)
 
+            click.echo(f"    Union: {len(seen_in_fw)} candidate repos")
+
+            # Phase B: fetch metadata, filter by min_stars, dedupe globally
+            repos_for_fw: list[RepoInfo] = []
+            for full_name in seen_in_fw:
+                if full_name in global_seen or len(repos_for_fw) >= limit:
+                    continue
+
+                time.sleep(1)  # Be gentle with the core API
+                try:
+                    repo_resp = client.get(
+                        f"{_GITHUB_API}/repos/{full_name}",
+                        headers=headers,
+                    )
+                except httpx.HTTPError:
+                    continue
+
+                if repo_resp.status_code != 200:
+                    continue
+
+                _sleep_for_rate_limit(repo_resp)
+                repo_json = repo_resp.json()
+
+                stars = int(repo_json.get("stargazers_count", 0))
+                if stars < min_stars:
+                    continue
+
+                global_seen.add(full_name)
+                repos_for_fw.append(RepoInfo(
+                    full_name=full_name,
+                    clone_url=str(repo_json.get("clone_url", "")),
+                    stars=stars,
+                    language=str(repo_json.get("language", "") or ""),
+                    description=str(repo_json.get("description", "") or "")[:200],
+                    topics=tuple(repo_json.get("topics", [])),
+                ))
+
             repos_for_fw.sort(key=lambda r: r.stars, reverse=True)
             result[fw_name] = repos_for_fw[:limit]
-            click.echo(f"    Found {len(result[fw_name])} repos (>={min_stars} stars)")
+            click.echo(f"    Kept {len(result[fw_name])} repos after min_stars/limit")
 
     finally:
         client.close()
@@ -397,6 +402,20 @@ def main(
         )
     avg = round(sum(r.score for r in completed.values()) / len(completed), 1)
     click.echo(f"\n  Overall: {len(completed)} projects, average governance score: {avg}/100")
+
+    # Discovered vs scanned vs failed per framework
+    click.echo("\n=== Scan Success/Failure ===")
+    discovered_per_fw: dict[str, int] = {fw: len(repos) for fw, repos in discovered.items()}
+    scanned_per_fw: dict[str, int] = {}
+    for repo_name in completed:
+        fw = fw_map.get(repo_name, "unknown")
+        scanned_per_fw[fw] = scanned_per_fw.get(fw, 0) + 1
+    for fw_name in sorted(discovered_per_fw.keys()):
+        d = discovered_per_fw[fw_name]
+        s = scanned_per_fw.get(fw_name, 0)
+        f = d - s
+        click.echo(f"  {fw_name:18s} {d:3d} discovered  ->  {s:3d} scanned, {f:3d} failed")
+    click.echo(f"\n  Total unique repos discovered: {len(all_repos)}")
 
 
 if __name__ == "__main__":

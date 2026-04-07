@@ -1,25 +1,38 @@
 frameworks:
   crewai:
-    query: '"from crewai" language:python'
-    min_stars: 50
+    queries:
+      - '"from crewai import" language:python'
+      - '"crewai.tools" language:python'
+    min_stars: 20
     limit: 15
   langgraph:
-    query: '"from langgraph" language:python'
+    queries:
+      - '"from langgraph" language:python'
+      - '"langgraph.graph" language:python'
     min_stars: 50
     limit: 15
   autogen:
-    query: '"import autogen" language:python'
+    queries:
+      - '"import autogen" language:python'
+      - '"from autogen" language:python'
+      - '"autogen_agentchat" language:python'
     min_stars: 50
     limit: 15
   semantic_kernel:
-    query: '"from semantic_kernel" language:python'
+    queries:
+      - '"from semantic_kernel" language:python'
+      - '"import semantic_kernel" language:python'
     min_stars: 30
-    limit: 10
+    limit: 12
   pydantic_ai:
-    query: '"from pydantic_ai" language:python'
-    min_stars: 30
-    limit: 10
+    queries:
+      - '"from pydantic_ai" language:python'
+      - '"pydantic_ai.Agent" language:python'
+    min_stars: 20
+    limit: 12
   llama_index:
-    query: '"from llama_index" language:python'
-    min_stars: 50
-    limit: 10
+    queries:
+      - '"from llama_index" language:python'
+      - '"llama_index.agent" language:python'
+    min_stars: 40
+    limit: 12

@@ -1,348 +1,658 @@
 {
-  "generated_at": "2026-04-06T14:37:57.591266+00:00",
-  "total_scanned": 24,
+  "generated_at": "2026-04-07T12:31:11.238118+00:00",
+  "total_scanned": 53,
   "by_framework": {
-    "langgraph": {
+    "crewai": {
       "count": 4,
-      "avg_governance": 38.8,
-      "grade_distribution": {
-        "F": 3,
-        "D": 1
-      }
-    },
-    "autogen": {
-      "count": 5,
-      "avg_governance": 26.0,
-      "grade_distribution": {
-        "D": 1,
-        "F": 3,
-        "C": 1
-      }
-    },
-    "semantic_kernel": {
-      "count": 8,
-      "avg_governance": 33.4,
-      "grade_distribution": {
-        "F": 3,
-        "D": 5
-      }
-    },
-    "pydantic_ai": {
-      "count": 4,
-      "avg_governance": 9.8,
+      "avg_governance": 24.8,
       "grade_distribution": {
         "F": 4
       }
     },
+    "langgraph": {
+      "count": 6,
+      "avg_governance": 61.3,
+      "grade_distribution": {
+        "A": 3,
+        "F": 1,
+        "D": 2
+      }
+    },
+    "autogen": {
+      "count": 12,
+      "avg_governance": 45.6,
+      "grade_distribution": {
+        "A": 5,
+        "F": 6,
+        "D": 1
+      }
+    },
+    "semantic_kernel": {
+      "count": 10,
+      "avg_governance": 61.6,
+      "grade_distribution": {
+        "F": 3,
+        "A": 6,
+        "D": 1
+      }
+    },
+    "pydantic_ai": {
+      "count": 10,
+      "avg_governance": 16.0,
+      "grade_distribution": {
+        "F": 9,
+        "A": 1
+      }
+    },
     "llama_index": {
-      "count": 3,
-      "avg_governance": 61.0,
+      "count": 11,
+      "avg_governance": 45.0,
       "grade_distribution": {
         "C": 1,
-        "F": 1,
-        "B": 1
+        "F": 6,
+        "A": 2,
+        "D": 2
       }
     }
   },
   "projects": [
     {
-      "id": "53dfe97e",
-      "framework": "langgraph",
-      "governance_score": 34,
+      "id": "a852d156",
+      "framework": "crewai",
+      "governance_score": 5,
       "grade": "F",
-      "agents": 1,
+      "agents": 14,
+      "tools": 3,
+      "findings_by_severity": {
+        "MEDIUM": 24,
+        "HIGH": 68,
+        "CRITICAL": 3,
+        "LOW": 31
+      }
+    },
+    {
+      "id": "0450a87f",
+      "framework": "crewai",
+      "governance_score": 31,
+      "grade": "F",
+      "agents": 3,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 21,
+        "MEDIUM": 9,
+        "LOW": 7,
+        "CRITICAL": 2
+      }
+    },
+    {
+      "id": "879b133f",
+      "framework": "crewai",
+      "governance_score": 29,
+      "grade": "F",
+      "agents": 6,
       "tools": 2,
       "findings_by_severity": {
-        "CRITICAL": 3,
-        "HIGH": 81,
-        "MEDIUM": 29,
-        "LOW": 38
+        "MEDIUM": 14,
+        "HIGH": 26,
+        "LOW": 8,
+        "CRITICAL": 2
+      }
+    },
+    {
+      "id": "3a417a9f",
+      "framework": "crewai",
+      "governance_score": 34,
+      "grade": "F",
+      "agents": 0,
+      "tools": 1,
+      "findings_by_severity": {
+        "MEDIUM": 12,
+        "CRITICAL": 1,
+        "HIGH": 17,
+        "LOW": 7
+      }
+    },
+    {
+      "id": "53dfe97e",
+      "framework": "langgraph",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "006eafeb",
+      "framework": "langgraph",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 0,
+      "tools": 4,
+      "findings_by_severity": {
+        "HIGH": 25,
+        "CRITICAL": 8,
+        "MEDIUM": 10,
+        "LOW": 7
       }
     },
     {
       "id": "7bdbc989",
       "framework": "langgraph",
-      "governance_score": 35,
-      "grade": "F",
+      "governance_score": 92,
+      "grade": "A",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 32,
-        "MEDIUM": 6,
-        "LOW": 13
+        "MEDIUM": 4,
+        "HIGH": 1
       }
     },
     {
-      "id": "22be968f",
+      "id": "4f20181a",
       "framework": "langgraph",
       "governance_score": 47,
       "grade": "D",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 24,
-        "MEDIUM": 6,
-        "LOW": 16
+        "HIGH": 10,
+        "MEDIUM": 8,
+        "LOW": 4
       }
     },
     {
       "id": "3d8444d6",
       "framework": "langgraph",
-      "governance_score": 39,
-      "grade": "F",
+      "governance_score": 92,
+      "grade": "A",
       "agents": 0,
-      "tools": 5,
+      "tools": 0,
       "findings_by_severity": {
-        "HIGH": 118,
-        "MEDIUM": 31,
-        "LOW": 60
+        "MEDIUM": 4,
+        "HIGH": 1
       }
     },
     {
-      "id": "a35f85d0",
-      "framework": "autogen",
+      "id": "c69d1fac",
+      "framework": "langgraph",
       "governance_score": 45,
       "grade": "D",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
         "CRITICAL": 1,
-        "HIGH": 5,
-        "MEDIUM": 12,
-        "LOW": 1
+        "HIGH": 7,
+        "MEDIUM": 6,
+        "LOW": 3
+      }
+    },
+    {
+      "id": "a35f85d0",
+      "framework": "autogen",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "cbae342a",
+      "framework": "autogen",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 3,
+      "tools": 5,
+      "findings_by_severity": {
+        "HIGH": 48,
+        "MEDIUM": 24,
+        "CRITICAL": 5,
+        "LOW": 13
+      }
+    },
+    {
+      "id": "0578a1f4",
+      "framework": "autogen",
+      "governance_score": 37,
+      "grade": "F",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 1,
+        "HIGH": 16,
+        "MEDIUM": 7,
+        "LOW": 7
       }
     },
     {
       "id": "fc0d9be0",
       "framework": "autogen",
-      "governance_score": 13,
-      "grade": "F",
-      "agents": 5,
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 21,
-        "MEDIUM": 10,
-        "LOW": 7,
-        "CRITICAL": 3
+        "MEDIUM": 4,
+        "HIGH": 1
       }
     },
     {
       "id": "88cd631d",
       "framework": "autogen",
-      "governance_score": 0,
-      "grade": "F",
-      "agents": 5,
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 16,
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "7779c697",
+      "framework": "autogen",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 14,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 20,
         "MEDIUM": 10,
-        "LOW": 4,
-        "CRITICAL": 7
+        "LOW": 5,
+        "CRITICAL": 29
       }
     },
     {
       "id": "9e2ad6d8",
       "framework": "autogen",
-      "governance_score": 72,
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "5b4a5a43",
+      "framework": "autogen",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 17,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 41,
+        "MEDIUM": 8,
+        "CRITICAL": 8,
+        "LOW": 14
+      }
+    },
+    {
+      "id": "226f68e5",
+      "framework": "autogen",
+      "governance_score": 50,
+      "grade": "D",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 102,
+        "MEDIUM": 14,
+        "LOW": 31
+      }
+    },
+    {
+      "id": "4f7b3353",
+      "framework": "autogen",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "ee0d29dc",
+      "framework": "autogen",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 21,
+      "tools": 6,
+      "findings_by_severity": {
+        "HIGH": 180,
+        "CRITICAL": 19,
+        "MEDIUM": 37,
+        "LOW": 80
+      }
+    },
+    {
+      "id": "fe0ec240",
+      "framework": "autogen",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 1,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 30,
+        "HIGH": 96,
+        "MEDIUM": 86,
+        "LOW": 9
+      }
+    },
+    {
+      "id": "9bbb887c",
+      "framework": "semantic_kernel",
+      "governance_score": 11,
+      "grade": "F",
+      "agents": 3,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 5,
+        "HIGH": 244,
+        "MEDIUM": 14,
+        "LOW": 122
+      }
+    },
+    {
+      "id": "116a54d6",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "71ebf1fb",
+      "framework": "semantic_kernel",
+      "governance_score": 3,
+      "grade": "F",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 4,
+        "HIGH": 61,
+        "MEDIUM": 19,
+        "LOW": 28
+      }
+    },
+    {
+      "id": "dc2691c9",
+      "framework": "semantic_kernel",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 0,
+      "tools": 18,
+      "findings_by_severity": {
+        "MEDIUM": 42,
+        "CRITICAL": 19,
+        "HIGH": 60,
+        "LOW": 18
+      }
+    },
+    {
+      "id": "9610021b",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "b5b25553",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "883a4cd1",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "430e9506",
+      "framework": "semantic_kernel",
+      "governance_score": 50,
+      "grade": "D",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 116,
+        "MEDIUM": 27,
+        "LOW": 56
+      }
+    },
+    {
+      "id": "a8be4a19",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "d825f08c",
+      "framework": "semantic_kernel",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "cbf30b00",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 50,
+      "tools": 5,
+      "findings_by_severity": {
+        "HIGH": 422,
+        "CRITICAL": 37,
+        "MEDIUM": 75,
+        "LOW": 201
+      }
+    },
+    {
+      "id": "0b169f2d",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 9,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 24,
+        "HIGH": 210,
+        "MEDIUM": 30,
+        "LOW": 94
+      }
+    },
+    {
+      "id": "9b622c05",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 6,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 15,
+        "HIGH": 171,
+        "MEDIUM": 61,
+        "LOW": 76
+      }
+    },
+    {
+      "id": "37e821c5",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 5,
+      "tools": 1,
+      "findings_by_severity": {
+        "HIGH": 192,
+        "MEDIUM": 33,
+        "CRITICAL": 16,
+        "LOW": 88
+      }
+    },
+    {
+      "id": "e0f8804d",
+      "framework": "pydantic_ai",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "9cd34a27",
+      "framework": "pydantic_ai",
+      "governance_score": 11,
+      "grade": "F",
+      "agents": 1,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 56,
+        "MEDIUM": 35,
+        "CRITICAL": 4,
+        "LOW": 3
+      }
+    },
+    {
+      "id": "fa93cfd2",
+      "framework": "pydantic_ai",
+      "governance_score": 33,
+      "grade": "F",
+      "agents": 2,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 3,
+        "HIGH": 149,
+        "MEDIUM": 34,
+        "LOW": 70
+      }
+    },
+    {
+      "id": "bdbf4517",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 15,
+      "tools": 1,
+      "findings_by_severity": {
+        "CRITICAL": 15,
+        "HIGH": 316,
+        "MEDIUM": 56,
+        "LOW": 148
+      }
+    },
+    {
+      "id": "72f990b5",
+      "framework": "pydantic_ai",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 11,
+      "tools": 15,
+      "findings_by_severity": {
+        "HIGH": 195,
+        "CRITICAL": 22,
+        "MEDIUM": 35,
+        "LOW": 77
+      }
+    },
+    {
+      "id": "073ac840",
+      "framework": "pydantic_ai",
+      "governance_score": 24,
+      "grade": "F",
+      "agents": 1,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 2,
+        "HIGH": 37,
+        "MEDIUM": 11,
+        "LOW": 15
+      }
+    },
+    {
+      "id": "1be56c8e",
+      "framework": "llama_index",
+      "governance_score": 70,
       "grade": "C",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
         "HIGH": 4,
         "MEDIUM": 6,
-        "LOW": 1
+        "LOW": 3
       }
     },
     {
-      "id": "4f7b3353",
-      "framework": "autogen",
-      "governance_score": 0,
-      "grade": "F",
-      "agents": 6,
-      "tools": 0,
-      "findings_by_severity": {
-        "CRITICAL": 103,
-        "HIGH": 431,
-        "MEDIUM": 282,
-        "LOW": 53
-      }
-    },
-    {
-      "id": "116a54d6",
-      "framework": "semantic_kernel",
-      "governance_score": 1,
-      "grade": "F",
-      "agents": 2,
-      "tools": 0,
-      "findings_by_severity": {
-        "CRITICAL": 5,
-        "HIGH": 55,
-        "MEDIUM": 15,
-        "LOW": 13
-      }
-    },
-    {
-      "id": "9610021b",
-      "framework": "semantic_kernel",
-      "governance_score": 33,
+      "id": "15a676e9",
+      "framework": "llama_index",
+      "governance_score": 37,
       "grade": "F",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 27,
-        "MEDIUM": 11,
-        "LOW": 6
-      }
-    },
-    {
-      "id": "60bc7657",
-      "framework": "semantic_kernel",
-      "governance_score": 43,
-      "grade": "D",
-      "agents": 0,
-      "tools": 0,
-      "findings_by_severity": {
-        "HIGH": 18,
-        "MEDIUM": 8,
-        "LOW": 7
-      }
-    },
-    {
-      "id": "b5b25553",
-      "framework": "semantic_kernel",
-      "governance_score": 42,
-      "grade": "D",
-      "agents": 0,
-      "tools": 2,
-      "findings_by_severity": {
-        "MEDIUM": 22,
-        "HIGH": 51,
-        "LOW": 24
-      }
-    },
-    {
-      "id": "883a4cd1",
-      "framework": "semantic_kernel",
-      "governance_score": 52,
-      "grade": "D",
-      "agents": 0,
-      "tools": 0,
-      "findings_by_severity": {
-        "HIGH": 25,
-        "MEDIUM": 15,
-        "LOW": 12
-      }
-    },
-    {
-      "id": "72697633",
-      "framework": "semantic_kernel",
-      "governance_score": 1,
-      "grade": "F",
-      "agents": 6,
-      "tools": 0,
-      "findings_by_severity": {
-        "HIGH": 59,
-        "MEDIUM": 21,
-        "LOW": 22,
-        "CRITICAL": 5
-      }
-    },
-    {
-      "id": "a8be4a19",
-      "framework": "semantic_kernel",
-      "governance_score": 43,
-      "grade": "D",
-      "agents": 0,
-      "tools": 0,
-      "findings_by_severity": {
-        "HIGH": 15,
-        "MEDIUM": 10,
-        "LOW": 5
-      }
-    },
-    {
-      "id": "d825f08c",
-      "framework": "semantic_kernel",
-      "governance_score": 52,
-      "grade": "D",
-      "agents": 0,
-      "tools": 0,
-      "findings_by_severity": {
-        "HIGH": 8,
+        "HIGH": 11,
         "MEDIUM": 6,
         "LOW": 1
       }
     },
     {
-      "id": "c093c351",
-      "framework": "pydantic_ai",
-      "governance_score": 0,
-      "grade": "F",
-      "agents": 6,
-      "tools": 2,
-      "findings_by_severity": {
-        "HIGH": 106,
-        "CRITICAL": 11,
-        "MEDIUM": 32,
-        "LOW": 46
-      }
-    },
-    {
-      "id": "e0f8804d",
-      "framework": "pydantic_ai",
-      "governance_score": 0,
-      "grade": "F",
-      "agents": 6,
-      "tools": 0,
-      "findings_by_severity": {
-        "CRITICAL": 5,
-        "HIGH": 40,
-        "MEDIUM": 11,
-        "LOW": 15
-      }
-    },
-    {
-      "id": "7e5afe99",
-      "framework": "pydantic_ai",
-      "governance_score": 0,
-      "grade": "F",
-      "agents": 79,
-      "tools": 19,
-      "findings_by_severity": {
-        "HIGH": 517,
-        "MEDIUM": 92,
-        "CRITICAL": 24,
-        "LOW": 248
-      }
-    },
-    {
-      "id": "7de2431b",
-      "framework": "pydantic_ai",
-      "governance_score": 39,
-      "grade": "F",
-      "agents": 0,
-      "tools": 7,
-      "findings_by_severity": {
-        "HIGH": 16,
-        "MEDIUM": 12,
-        "LOW": 5
-      }
-    },
-    {
-      "id": "70a36a1a",
+      "id": "a50a5c53",
       "framework": "llama_index",
-      "governance_score": 69,
-      "grade": "C",
-      "agents": 0,
+      "governance_score": 13,
+      "grade": "F",
+      "agents": 1,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 5,
-        "MEDIUM": 5,
-        "LOW": 1
+        "HIGH": 40,
+        "MEDIUM": 22,
+        "CRITICAL": 4,
+        "LOW": 11
       }
     },
     {
-      "id": "2cc861a9",
+      "id": "76c37ca1",
       "framework": "llama_index",
       "governance_score": 37,
       "grade": "F",
@@ -350,22 +660,101 @@
       "tools": 0,
       "findings_by_severity": {
         "CRITICAL": 1,
-        "HIGH": 9,
-        "MEDIUM": 8,
-        "LOW": 3
+        "HIGH": 122,
+        "MEDIUM": 36,
+        "LOW": 58
+      }
+    },
+    {
+      "id": "893bac46",
+      "framework": "llama_index",
+      "governance_score": 0,
+      "grade": "F",
+      "agents": 1,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 8,
+        "HIGH": 89,
+        "MEDIUM": 36,
+        "LOW": 39
+      }
+    },
+    {
+      "id": "70a36a1a",
+      "framework": "llama_index",
+      "governance_score": 92,
+      "grade": "A",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "MEDIUM": 4,
+        "HIGH": 1
       }
     },
     {
       "id": "951f8526",
       "framework": "llama_index",
-      "governance_score": 77,
-      "grade": "B",
+      "governance_score": 92,
+      "grade": "A",
       "agents": 0,
       "tools": 0,
       "findings_by_severity": {
-        "HIGH": 3,
+        "MEDIUM": 4,
+        "HIGH": 1
+      }
+    },
+    {
+      "id": "a14ae764",
+      "framework": "llama_index",
+      "governance_score": 28,
+      "grade": "F",
+      "agents": 2,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 2,
+        "HIGH": 225,
+        "MEDIUM": 54,
+        "LOW": 102
+      }
+    },
+    {
+      "id": "d333cabe",
+      "framework": "llama_index",
+      "governance_score": 49,
+      "grade": "D",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 10,
         "MEDIUM": 6,
-        "LOW": 1
+        "LOW": 4
+      }
+    },
+    {
+      "id": "f9d87d97",
+      "framework": "llama_index",
+      "governance_score": 48,
+      "grade": "D",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "HIGH": 14,
+        "MEDIUM": 6,
+        "LOW": 7
+      }
+    },
+    {
+      "id": "44575fb1",
+      "framework": "llama_index",
+      "governance_score": 29,
+      "grade": "F",
+      "agents": 0,
+      "tools": 0,
+      "findings_by_severity": {
+        "CRITICAL": 1,
+        "HIGH": 30,
+        "MEDIUM": 9,
+        "LOW": 10
       }
     }
   ]
