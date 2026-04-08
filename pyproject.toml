@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drako"
-version = "2.5.2"
+version = "2.6.0"
 description = "The Python Governance Platform for AI Agents — compliance middleware for LangGraph, CrewAI, AutoGen"
 readme = "README.md"
 license = "BUSL-1.1"
@@ -32,12 +32,14 @@ dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
     "rich>=13.0.0",
+    "networkx>=3.0",
 ]
 
 [project.optional-dependencies]
 crewai = ["crewai>=0.70.0"]
 langgraph = ["langgraph>=0.2.0"]
 autogen = ["pyautogen>=0.4.0"]
+comply = ["python-docx>=1.1.0", "weasyprint>=60.0", "jinja2>=3.1.0"]
 proxy = ["fastapi>=0.110.0", "uvicorn>=0.29.0"]
 typescript = [
     "tree-sitter>=0.23",
@@ -67,6 +69,9 @@ packages = ["src/drako"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "comply: tests requiring the [comply] optional extras",
+]
 
 [tool.mypy]
 python_version = "3.10"

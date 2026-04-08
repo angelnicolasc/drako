@@ -1,0 +1,22 @@
+{% extends "_base.html.j2" %}
+{% block content %}
+<h2>1. Logging system</h2>
+<p>Audit trail enabled: <b>{{ "yes" if ctx.audit_trail_enabled else "no" }}</b></p>
+
+<h2>2. Events logged</h2>
+<ul>
+  <li>Model invocations</li>
+  <li>Tool calls</li>
+  <li>HITL approvals / rejections</li>
+  <li>Configuration changes</li>
+</ul>
+
+<h2>3. Retention period</h2>
+<p>{{ ctx.data_retention_policy or "—" }}</p>
+
+<h2>4. Access controls</h2>
+<p>Escalation path: {{ ctx.escalation_path or "—" }}</p>
+
+<h2>5. Integrity measures</h2>
+<p>Drako audit chain provides append-only hashed records when the proxy is configured.</p>
+{% endblock %}

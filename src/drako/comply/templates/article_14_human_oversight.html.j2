@@ -1,0 +1,22 @@
+{% extends "_base.html.j2" %}
+{% block content %}
+<h2>1. Oversight measures</h2>
+<p>Human oversight responsible: <b>{{ ctx.oversight_responsible_name or "—" }}</b>
+({{ ctx.oversight_responsible_role or "—" }}).</p>
+
+<h2>2. Human-in-the-loop configuration</h2>
+<p>HITL configured: <b>{{ "yes" if ctx.hitl_configured else "no" }}</b></p>
+{% if ctx.hitl_triggers %}
+<p>Triggers:</p>
+<ul>{% for t in ctx.hitl_triggers %}<li>{{ t }}</li>{% endfor %}</ul>
+{% endif %}
+
+<h2>3. Intervention procedures</h2>
+<p>{{ ctx.incident_response_procedure or "—" }}</p>
+
+<h2>4. Escalation path</h2>
+<p>{{ ctx.escalation_path or "—" }}</p>
+
+<h2>5. Out-of-scope use cases</h2>
+<ul>{% for u in ctx.out_of_scope_use_cases %}<li>{{ u }}</li>{% endfor %}</ul>
+{% endblock %}

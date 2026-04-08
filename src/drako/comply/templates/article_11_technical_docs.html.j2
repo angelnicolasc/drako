@@ -1,0 +1,37 @@
+{% extends "_base.html.j2" %}
+{% block content %}
+<h2>1. System description</h2>
+<p>{{ ctx.system_purpose or "—" }}</p>
+
+<h2>2. Architecture (from Drako BOM)</h2>
+<h3>Agents</h3>
+<table>
+  <thead><tr><th>Name</th><th>Framework</th><th>File</th></tr></thead>
+  <tbody>
+  {% for a in ctx.agents %}
+    <tr><td>{{ a.name }}</td><td>{{ a.framework }}</td><td>{{ a.file_path }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<h3>Tools</h3>
+<table>
+  <thead><tr><th>Name</th><th>Filesystem</th><th>Network</th><th>Code exec</th></tr></thead>
+  <tbody>
+  {% for t in ctx.tools %}
+    <tr><td>{{ t.name }}</td><td>{{ t.has_filesystem_access }}</td><td>{{ t.has_network_access }}</td><td>{{ t.has_code_execution }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<h3>Models</h3>
+<ul>{% for m in ctx.models %}<li>{{ m.name }}</li>{% endfor %}</ul>
+
+<h2>3. Training data</h2>
+<ul>{% for s in ctx.training_data_sources %}<li>{{ s }}</li>{% endfor %}</ul>
+<p>Provenance: {{ ctx.data_provenance or "—" }}</p>
+
+<h2>4. Cybersecurity measures</h2>
+<p>Drako governance score: <b>{{ ctx.governance_score }}/100</b>.</p>
+
+<h2>5. Known limitations</h2>
+<ul>{% for l in ctx.known_limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+{% endblock %}

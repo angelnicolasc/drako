@@ -1,0 +1,33 @@
+{% extends "_base.html.j2" %}
+{% block content %}
+<h2>1. Risk management system</h2>
+<p>{{ ctx.system_purpose or "—" }}</p>
+<p>This document describes the risk management system in place for
+<b>{{ ctx.system_name }}</b>, a system of class <b>{{ ctx.domain or "general" }}</b>
+operated by <b>{{ ctx.provider_entity or "—" }}</b>.</p>
+
+<h2>2. Identified risks</h2>
+{% if ctx.risk_findings %}
+<table>
+  <thead><tr><th>ID</th><th>Severity</th><th>Description</th></tr></thead>
+  <tbody>
+  {% for f in ctx.risk_findings %}
+    <tr><td>{{ f.policy_id }}</td><td>{{ f.severity }}</td><td>{{ f.message }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No findings recorded in the latest scan summary.</p>
+{% endif %}
+
+<h2>3. Residual risks</h2>
+<ul>{% for r in ctx.residual_risks %}<li>{{ r }}</li>{% endfor %}</ul>
+
+<h2>4. Mitigation measures</h2>
+<p>Governance score (Drako): <b>{{ ctx.governance_score }}/100</b>.
+Determinism score: <b>{{ ctx.determinism_score }}/100</b>.</p>
+
+<h2>5. Post-market monitoring plan</h2>
+<p>Update / retraining cadence: {{ ctx.update_cadence or "—" }}.</p>
+<p>Incident response procedure: {{ ctx.incident_response_procedure or "—" }}.</p>
+{% endblock %}

@@ -58,6 +58,8 @@ def _register_commands() -> None:
     from drako.cli.serve_command import serve
     from drako.cli.verify_command import verify
     from drako.cli.desktop_command import desktop
+    from drako.cli.nocode_command import nocode
+    from drako.cli.comply_command import comply
 
     # Ordered by user journey: scan → configure → connect → manage
     cli.add_command(scan)
@@ -78,6 +80,8 @@ def _register_commands() -> None:
     cli.add_command(serve)
     cli.add_command(verify)
     cli.add_command(desktop)
+    cli.add_command(nocode)
+    cli.add_command(comply)
 
 
 _register_commands()

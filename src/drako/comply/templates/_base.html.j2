@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} — {{ ctx.system_name }}</title>
+<style>
+  @page { size: A4; margin: 2.4cm 2cm; }
+  body { font-family: "Georgia", serif; font-size: 11pt; color: #111; line-height: 1.45; }
+  h1, h2, h3 { font-family: "Helvetica", "Arial", sans-serif; color: #0a0a0a; }
+  h1 { font-size: 20pt; border-bottom: 2px solid #333; padding-bottom: .3em; }
+  h2 { font-size: 14pt; margin-top: 1.6em; }
+  h3 { font-size: 11pt; margin-top: 1em; }
+  .disclaimer {
+    border: 1px solid #b00020;
+    background: #fff5f5;
+    padding: 1em;
+    margin-bottom: 2em;
+    font-size: 9.5pt;
+    line-height: 1.35;
+  }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: .8em 0; font-size: 9.5pt; }
+  th, td { border: 1px solid #ccc; padding: .35em .55em; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  ul { margin: .3em 0 .8em 1.2em; }
+</style>
+</head>
+<body>
+
+<div class="disclaimer">{{ legal_disclaimer }}</div>
+
+<h1>{{ title }}</h1>
+<div class="meta">
+  System: <b>{{ ctx.system_name or "—" }}</b> ({{ ctx.system_version or "—" }})<br>
+  Provider: {{ ctx.provider_entity or "—" }}<br>
+  Generated: {{ ctx.generated_at.strftime("%Y-%m-%d %H:%M UTC") }} · Drako v{{ ctx.drako_version }}
+</div>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>
