@@ -90,6 +90,12 @@ import click
     default=None,
     help="Only scan files changed since a git ref (e.g., HEAD~1, origin/main)",
 )
+@click.option(
+    "--simple",
+    "simple_mode",
+    is_flag=True,
+    help="Indie-developer-friendly plain-text output with framework-aware fixes",
+)
 def scan(
     directory: str,
     output_format: str,
@@ -106,6 +112,7 @@ def scan(
     threshold_det: int,
     fail_on: str | None,
     diff_ref: str | None,
+    simple_mode: bool,
 ) -> None:
     """Scan your AI agent project for governance and compliance gaps.
 
@@ -114,6 +121,13 @@ def scan(
 
     All analysis runs offline — no network calls, no signup required.
     """
+    # Mutual exclusion for --simple
+    if simple_mode:
+        if output_format == "sarif":
+            raise click.UsageError("--simple is incompatible with --format sarif")
+        if details:
+            raise click.UsageError("--simple is incompatible with --details")
+
     # Lazy imports keep CLI startup fast
     from drako.cli.scanner import run_scan
 
@@ -232,6 +246,18 @@ def scan(
         dataset = load_dataset()
         fw_name = result.bom.frameworks[0].name if result.bom.frameworks else None
         benchmark_result = compute_benchmark(result.score, fw_name, dataset)
+
+    # ---- Simple mode short-circuit ----
+    if simple_mode:
+        from drako.simple.formatter import format_simple
+        from drako.simple.router import select_module
+        from drako.simple.rules import SIMPLE_RULE_WHITELIST
+
+        fw_info = result.bom.frameworks[0] if result.bom.frameworks else None
+        fix_module = select_module(fw_info)
+        whitelisted = [f for f in display_findings if f.policy_id in SIMPLE_RULE_WHITELIST]
+        click.echo(format_simple(whitelisted, fix_module, score=result.score, grade=result.grade))
+        return
 
     # ---- Output based on format ----
     if output_format == "json":
