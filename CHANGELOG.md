@@ -5,13 +5,26 @@ All notable changes to Drako are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 
-## [2.6.0] - 2026-04-08
+## [3.0.0] - 2026-04-10
+
+### Changed
+- **Unified versioning**: SDK, backend, public repo, and MCP manifests now
+  share version 3.0.0. All version references synchronized across
+  pyproject.toml, `__init__.py`, server.json, and OpenAPI spec.
+- License classifier corrected to match BUSL-1.1 license field
 
 ### Added
 - **`drako scan --simple`** — indie-developer-friendly output mode. Filters findings to a curated whitelist of 12 high-signal rules, renders plain text with severity markers (capped at 10 findings), and emits framework-aware remediation snippets for CrewAI, LangChain, LangGraph, AutoGen, and direct API integrations. Mutually exclusive with `--format sarif` and `--details`.
 - **`drako nocode`** — governance scanner for no-code agent workflows. Parses n8n and Flowise exports into a normalized graph, runs BFS taint propagation from user-input nodes, and evaluates 10 rules (NC-001 → NC-010) covering unsanitized input, code execution, credential exposure, missing human-in-the-loop, and more. Ships `drako nocode scan` and `drako nocode bom` with text/JSON/markdown output, reusing the existing scoring engine for coherence with `drako scan`.
 - **`drako[comply]`** — optional extra for EU AI Act documentation generation. Runs a 30-question interactive assessment, merges answers with the latest scan cache and BOM, and generates DOCX and PDF drafts for Articles 9 (Risk Management), 11 (Technical Documentation), 12 (Record-Keeping), and 14 (Human Oversight). Every generated document carries a hardcoded legal disclaimer stating that the output is a draft requiring qualified legal review. Install with `pip install drako[comply]`.
+- **Desktop Agent Scanning** improvements and stabilization
+- TypeScript scanner with Tree-sitter (17 dedicated rules)
+- 97 total governance rules (up from 25 in v1.0.1)
+- Determinism scoring, benchmark system, baseline scanning
+- Proxy mode, policy templates, Helm chart
+- `govern()` universal wrapper for runtime compliance enforcement
 
+---
 
 ## [2.5.0] - 2026-04-01
 
